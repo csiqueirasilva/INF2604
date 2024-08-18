@@ -3,9 +3,18 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@geometry/*": [
+        "./src/geometry/*"
+      ],
+      "@pages/*": [
+        "./src/pages/*"
+      ],
+      "@helpers/*": [
+        "./src/helpers/*"
+      ],
     }
   },
   "include": [
