@@ -1,21 +1,33 @@
 import MyText from '@components/MyText';
-import Grandezas1 from '@pages/conceitos-basicos/Grandezas1';
-import HomeScreen from '@pages/HomeScreen';
+import { SceneWithControlsProvider } from '@helpers/SceneWithControlsContext';
+import GrandezasSomaVetores from '@pages/conceitos-basicos/GrandezasSomaVetores';
+import GrandezasSubtracaoDeVetores from '@pages/conceitos-basicos/GrandezasSubtracaoDeVetores';
+import HomeScreen, { routesHelper } from '@pages/HomeScreen';
 import React from 'react';
 import { Platform } from 'react-native';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 
 export default function Index() {
   return (
-    <>
-      { Platform.OS === "web" ?
+    <SceneWithControlsProvider>
+      {Platform.OS === "web" ?
         <HashRouter>
           <Routes>
             <Route path="/" Component={HomeScreen} />
-            <Route path="/conceitos-basicos/grandezas1" Component={Grandezas1} />
+            {
+              routesHelper.map(section =>
+                section.entries.map(entry => (
+                  <Route
+                    key={entry.url}
+                    path={entry.url}
+                    Component={entry.component}
+                  />
+                ))
+              )
+            }
           </Routes>
         </HashRouter>
-      : <MyText>NYI Mobile routes</MyText> }
-    </>
+        : <MyText>NYI Mobile routes</MyText>}
+    </SceneWithControlsProvider>
   );
 }
