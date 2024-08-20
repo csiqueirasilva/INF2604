@@ -23,7 +23,7 @@ function InternalRenderingComponent () {
     return (
         <>
             <RenderVector name="v1" value={v1} setValue={setV1} />
-            <ReadOnlyRenderVector name={`v1 x ${escala}`} value={soma} color={"yellow"} />
+            <ReadOnlyRenderVector name={`v1 x ${escala}`} value={soma} color={"black"} />
         </>
     );
 }

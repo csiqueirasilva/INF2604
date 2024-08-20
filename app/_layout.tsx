@@ -9,6 +9,14 @@ import { Roboto_400Regular, Roboto_700Bold } from '@expo-google-fonts/roboto';
 import "../global.css"
 import { Provider } from 'react-native-paper';
 
+const lightTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    // You can customize the colors if you want to tweak the light mode further
+  },
+};
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -30,7 +38,7 @@ export default function RootLayout() {
   }
 
   return (
-    <Provider>
+    <Provider theme={lightTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />

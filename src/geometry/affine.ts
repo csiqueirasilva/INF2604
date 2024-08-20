@@ -1,6 +1,6 @@
 import { RADIAN } from "@geometry/constants";
 import { useThree } from "@react-three/fiber";
-import { Vector3 } from "three";
+import { Vector2, Vector3 } from "three";
 
 export class Point3 {
     public x : number = 0
@@ -45,6 +45,8 @@ export function multiplyPointByScalar(v1 : Point3, n : number) : Point3 {
 }
 
 // theta(1)
+// a rigor, tinha que ser o somatorio da multiplicação de todas as coordenadas em cada dimensão
+// também tinha que estar em euler.ts por semantica, mas para nao gerar dependencia ciclica fica aqui
 export function dotProduct(v1 : Vector3, v2 : Vector3) : number {
     return (v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z);
 }
@@ -91,7 +93,7 @@ export function interpolatePoints(points: Point3[], scalars: number[]): Point3 {
     return pointAcc.clone();
 }
 
-// coordenadas homogenas serao implementadas se necessario nos shaders
+// coordenadas homogenas serao implementadas, se necessario, via shaders
 // no alto nivel temos classes THREE.Vector3 para vetores e uso nas renderizacoes e nossa propria classe Point3 para calculos envolvendo pontos
 
 export enum OrientationCase {
@@ -111,8 +113,16 @@ export function orientation1D(x1: number, x2: number): OrientationCase {
 }
 
 // theta(1)
+// a rigor tinha que estar em euler.ts por semantica, mas para nao gerar dependencia ciclica fica aqui
 export function vectorLength(v : Vector3) {
-    return Math.sqrt((v.x * v.x) + (v.y * v.y) + (v.z * v.z));
+    const dot = dotProduct(v, v);
+    return Math.sqrt(dot);
+}
+
+// theta(1)
+// a rigor tinha que estar em euler.ts por semantica, mas para nao gerar dependencia ciclica fica aqui
+export function vector2dLength(v : Vector2) {
+    return Math.sqrt((v.x * v.x) + (v.y * v.y));
 }
 
 // theta(1)
@@ -134,6 +144,7 @@ export function rotateVector(vector: Vector3, angle: number, axis: Vector3 = new
 
 // theta(1)
 export function signedArea2D(p1: Point3, p2: Point3, p3: Point3): number {
+    // determinante
     return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
 }
 
