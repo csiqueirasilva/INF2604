@@ -39,7 +39,9 @@ export default function BaseRenderVector({
             {
                 showName && 
                 <Html position={labelPos.clone()}>
-                    <div className={`${debug ? 'border-black border-[1px] border-solid' : ''} select-none p-[0px] font-roboto-bold`} style={{ color: color.toString() }}>{ name }</div>
+                    <div 
+                        style={{ display: 'inline-block', whiteSpace: 'nowrap', color: color.toString() }} 
+                        className={`${debug ? 'border-black border-[1px] border-solid' : ''} select-none p-[0px] font-roboto-bold`}>{ name }</div>
                 </Html>
             }
         </object3D>

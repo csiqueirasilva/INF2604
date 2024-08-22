@@ -5,6 +5,8 @@ import GrandezasEscalarVetor from "@pages/conceitos-basicos/GrandezasEscalarVeto
 import GrandezasProdutoVetorial from "@pages/conceitos-basicos/GrandezasProdutoVetorial";
 import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores";
 import GrandezasSubtracaoDeVetores from "@pages/conceitos-basicos/GrandezasSubtracaoDeVetores";
+import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
+import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
 import { Divider, Paragraph, Title } from "react-native-paper";
 
 interface RouteEntry {
@@ -41,6 +43,21 @@ const routesHelper: RouteSection[] = [{
             title: 'Produto vetorial entre vetores',
             url: '/conceitos-basicos/grandezas-dotproduct'
         },
+    ]
+},
+{
+    title: 'Exercícios',
+    entries: [
+        {
+            component: PontosMaisProximos,
+            title: 'Nuvem de pontos - pontos mais próximos',
+            url: '/exercicios/pontos-mais-proximos'
+        },
+        {
+            component: CirculoMinimo,
+            title: 'Círculo mínimo',
+            url: '/exercicios/circulo-minimo'
+        }
     ]
 }]
 

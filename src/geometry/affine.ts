@@ -1,4 +1,5 @@
 import { RADIAN } from "@geometry/constants";
+import { distanceBetweenPoints } from "@geometry/euler";
 import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
 
@@ -24,6 +25,25 @@ export class Point3 {
     public add(p : Point3) : Vector3 {
         return addVectors(this.toVector3(), p.toVector3())
     }
+    // theta(1)
+    public distanceTo(p : Point3) : number {
+        return distanceBetweenPoints(this, p)
+    }
+    // theta(n)
+    static centroid(points: Point3[]): Point3 {
+        const n = points.length;
+        const sum = points.reduce(
+            (acc, point) => {
+                acc.x += point.x;
+                acc.y += point.y;
+                acc.z += point.z;
+                return acc;
+            },
+            { x: 0, y: 0, z: 0 }
+        );
+        return new Point3(sum.x / n, sum.y / n, sum.z / n);
+    }
+    static fromVector3 = (v : Vector3) : Point3 => new Point3(v.x, v.y, v.z)
 }
 
 // theta(1)
