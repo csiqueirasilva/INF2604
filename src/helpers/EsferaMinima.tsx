@@ -1,5 +1,4 @@
 import { Point3 } from "@geometry/affine";
-import { minSphere } from "@geometry/minsphere";
 import { boundingSphereInCloud, findClosestPoints, findFarthestPoints, PolarReference } from "@geometry/topology";
 import HighlightSprite from "@helpers/HighlightSprite";
 import RenderPoint from "@helpers/RenderPoint";
@@ -19,8 +18,8 @@ function InternalComponent({ points } : { points : Point3[] }) {
         if(points.length > 0) {
             const bs = boundingSphereInCloud(points);
             setBoundingSphere(bs);
-            const ms = minSphere(points);
-            setMinimumSphere(ms);
+            // const ms = minSphere(points);
+            // setMinimumSphere(ms);
         }
     }, [ points ]);
 
