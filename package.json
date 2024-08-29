@@ -6,7 +6,7 @@
     "start": "expo start -c",
     "test": "jest --roots tests",
     "lint": "expo lint",
-    "deploy": "gh-pages -t -d dist",
+    "deploy": "npx tailwindcss -i ./global.css -o ./node_modules/.cache/nativewind/global.css.web.css && gh-pages -t -d dist",
     "predeploy": "expo export -p web"
   },
   "jest": {
