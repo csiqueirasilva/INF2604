@@ -2,43 +2,6 @@ import { addVectors, Point3, scaleVector, subVectors, vectorLength } from "@geom
 import { distanceBetweenPoints, normalizeVector } from "@geometry/euler";
 import { BufferGeometry, Vector3 } from "three";
 
-function bruteForceFarthestPair(points: Point3[]): Point3[] {
-    let maxDist = -Infinity;
-    let maxPair: Point3[] = [];
-
-    for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-            const dist = distanceBetweenPoints(points[i], points[j]);
-            if (dist > maxDist) {
-                maxDist = dist;
-                maxPair = [points[i], points[j]];
-            }
-        }
-    }
-
-    return maxPair;
-}
-
-function findFarthestInStrip(strip: Point3[], d: number): Point3[] | null {
-    let maxDist = d;
-    let maxPair: Point3[] | null = null;
-
-    // Sort the strip by Y coordinate
-    strip.sort((a, b) => a.y - b.y);
-
-    for (let i = 0; i < strip.length; i++) {
-        for (let j = i + 1; j < strip.length && (strip[j].y - strip[i].y) < maxDist; j++) {
-            const dist = distanceBetweenPoints(strip[i], strip[j]);
-            if (dist > maxDist) {
-                maxDist = dist;
-                maxPair = [strip[i], strip[j]];
-            }
-        }
-    }
-
-    return maxPair;
-}
-
 export function findClosestPoints(points: Point3[]): Point3[] {
     const n = points.length;
 
@@ -123,10 +86,9 @@ interface PolarReferenceDebugStep {
 export interface PolarReference {
     origin: Point3
     radius: number
-    debugSteps: PolarReferenceDebugStep[]
 }
 
-export function minimumSphereInCloudApproximation(points: Point3[]): PolarReference {
+export function boundingSphereInCloud(points: Point3[]): PolarReference {
     if (points.length === 0) {
         throw new Error("Point cloud is empty.");
     }
@@ -158,10 +120,6 @@ export function minimumSphereInCloudApproximation(points: Point3[]): PolarRefere
 
     let radius = maxDistance;
 
-    const debugSteps: PolarReferenceDebugStep[] = [
-        { center: center, furtherstPoint: furthestPoint, radius: radius }
-    ];
-
     for (const point of points) {
         const vectorToCenter = point.sub(center);
         const distanceToPoint = vectorLength(vectorToCenter);
@@ -171,14 +129,12 @@ export function minimumSphereInCloudApproximation(points: Point3[]): PolarRefere
             const adjustment = scaleVector(normalizeVector(vectorToCenter), excessDistance / 2);
             center = Point3.fromVector3(addVectors(center.toVector3(), adjustment));
             radius += excessDistance / 2;
-            debugSteps.push({ center: center, furtherstPoint: point, radius: radius });
         }
     }
 
     return {
         origin: center,
-        radius: radius,
-        debugSteps
+        radius: radius
     };
 }
 
@@ -273,24 +229,36 @@ export function quickHull(points: Point3[]): Point3[] {
 }
 
 export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
-    const hullPoints = quickHull(points);
+
+    if (points.length < 2) {
+        throw new Error("At least two points are required to calculate the farthest points.");
+    }
 
     let maxDistance = -Infinity;
-
-    let ret : Point3[] = [];
 
     let point1: Point3|null = null;
     let point2: Point3|null = null;
 
-    for (let i = 0; i < hullPoints.length; i++) {
-        for (let j = i + 1; j < hullPoints.length; j++) {
-            const distance = hullPoints[i].distanceTo(hullPoints[j]);
-            if (distance > maxDistance) {
-                maxDistance = distance;
-                point1 = hullPoints[i];
-                point2 = hullPoints[j];
+    if (points.length === 2) {
+        point1 = points[0];
+        point2 = points[1];
+    } else /* 3 points or more */ {
+
+        if(points.length > 3) {
+            points = quickHull(points);
+        }
+
+        for (let i = 0; i < points.length; i++) {
+            for (let j = i + 1; j < points.length; j++) {
+                const distance = points[i].distanceTo(points[j]);
+                if (distance > maxDistance) {
+                    maxDistance = distance;
+                    point1 = points[i];
+                    point2 = points[j];
+                }
             }
         }
+        
     }
 
     if(point1 === null || point2 === null) {

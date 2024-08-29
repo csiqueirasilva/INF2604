@@ -1,5 +1,6 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import DefaultSceneWithoutLightning from "@helpers/DefaultSceneWithoutLightning";
+import { EsferaMinima } from "@helpers/EsferaMinima";
 import ReadOnlyRenderVector from "@helpers/ReadOnlyRenderVector";
 import RenderVector from "@helpers/RenderVector";
 import RNGRenderPointCloud from "@helpers/RNGRenderPointCloud";
@@ -15,7 +16,7 @@ import * as THREE from "three";
 function InternalRenderingComponent() {
     return (
         <>
-            <RNGRenderPointCloud name="A" />
+            <EsferaMinima name="A" minNumberOfPoints={2} />
         </>
     );
 }

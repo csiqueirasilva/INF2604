@@ -57,9 +57,6 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
     const [usedColor, setUsedColor] = useState<string>(startColor);
     const [points, setPoints] = useState<Point3[]>([]);
     const [nPoints, setNPoints] = useState<number>(2);
-    const [closestPoints, setClosestPoints] = useState<Point3[]>([]);
-    const [farthestPoints, setFarthestPoints] = useState<Point3[]>([]);
-    const [minimumSphereRef, setMinimumSphereRef] = useState<PolarReference>();
     const [rngType, setRNGType] = useState<PointGenerationType>(PointGenerationType.RANDOM_BRUTE_FORCE);
 
     const [values, setControls] = useControls(`Núvem de pontos ${name}`, () => {
@@ -94,27 +91,9 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
     return (
         <>
             {
-                minimumSphereRef &&
-                <group>
-                    <Sphere args={[minimumSphereRef.radius, 16, 16]} position={[minimumSphereRef.origin.x, minimumSphereRef.origin.y, minimumSphereRef.origin.z]}>
-                        <meshBasicMaterial opacity={0.5} color="rgba(255, 255, 255)" transparent wireframe />
-                    </Sphere>
-                    <RenderPoint position={minimumSphereRef.origin.toVector3()} color="green" additionalLabel="centro" />
-                    {
-                        minimumSphereRef.debugSteps.map((( debug, idx ) => 
-                            <RenderVector key={idx} name={`Step-${idx}`} origin={debug.center.toVector3()} value={debug.furtherstPoint.toVector3()} />
-                        ))
-                    }
-                </group>
-            }
-            {
                 children instanceof Function && children(points)
             }
             <InstancedRenderedPoint points={points.map(x => x.toVector3())} color={values['Cor'] || 'black'} size={size} />
-            {/* <BaseRenderPointCloud points={points.map((v, idx) => ({ 
-                position: v.toVector3(),
-                name: `${idx}`
-            })) } color={color} size={size} /> */}
         </>
     );
 };
