@@ -9,7 +9,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 
 export default function Index() {
   return (
-    <SceneWithControlsProvider>
+    <>
       {Platform.OS === "web" ?
         <HashRouter>
           <Routes>
@@ -28,6 +28,6 @@ export default function Index() {
           </Routes>
         </HashRouter>
         : <MyText>NYI Mobile routes</MyText>}
-    </SceneWithControlsProvider>
+    </>
   );
 }

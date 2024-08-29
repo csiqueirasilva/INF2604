@@ -29,6 +29,10 @@ export class Point3 {
     public distanceTo(p : Point3) : number {
         return distanceBetweenPoints(this, p)
     }
+    // theta(1)
+    public medianPointTo(p : Point3) : Point3 {
+        return Point3.fromVector3(this.toVector3().add(p.toVector3().sub(this).multiplyScalar(0.5)));
+    }
     // theta(n)
     static centroid(points: Point3[]): Point3 {
         const n = points.length;

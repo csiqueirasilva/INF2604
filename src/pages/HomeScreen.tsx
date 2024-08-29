@@ -6,6 +6,7 @@ import GrandezasProdutoVetorial from "@pages/conceitos-basicos/GrandezasProdutoV
 import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores";
 import GrandezasSubtracaoDeVetores from "@pages/conceitos-basicos/GrandezasSubtracaoDeVetores";
 import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
+import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
 import { Divider, Paragraph, Title } from "react-native-paper";
 
@@ -49,8 +50,13 @@ const routesHelper: RouteSection[] = [{
     title: 'Exercícios',
     entries: [
         {
+            component: NuvemDePontosAleatoria,
+            title: 'Nuvem de pontos - aleatória',
+            url: '/exercicios/nuvem-aleatoria'
+        },
+        {
             component: PontosMaisProximos,
-            title: 'Nuvem de pontos - pontos mais próximos',
+            title: 'Nuvem de pontos - pontos mais/menos próximos',
             url: '/exercicios/pontos-mais-proximos'
         },
         {

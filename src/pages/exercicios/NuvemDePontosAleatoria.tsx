@@ -1,6 +1,5 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import DefaultSceneWithoutLightning from "@helpers/DefaultSceneWithoutLightning";
-import { DistancesInCloud } from "@helpers/DistancesInCloud";
 import ReadOnlyRenderVector from "@helpers/ReadOnlyRenderVector";
 import RenderVector from "@helpers/RenderVector";
 import RNGRenderPointCloud from "@helpers/RNGRenderPointCloud";
@@ -16,16 +15,16 @@ import * as THREE from "three";
 function InternalRenderingComponent() {
     return (
         <>
-            <DistancesInCloud name="A" minNumberOfPoints={4} maxNumberOfPoints={4000} />
+            <RNGRenderPointCloud name="A" />
         </>
     );
 }
 
-export default function PontosMaisProximos() {
+export default function NuvemDePontosAleatoria() {
 
     return (
         <>
-            <HeaderWithBackButton title="Exercícios - Pontos mais próximos" />
+            <HeaderWithBackButton title="Exercícios - Núvem de pontos aleatória" />
             <DefaultSceneWithoutLightning>
                 <InternalRenderingComponent />
             </DefaultSceneWithoutLightning>
