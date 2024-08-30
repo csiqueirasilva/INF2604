@@ -18,6 +18,10 @@ export class Point3 {
         this.z = z;
     }
     // theta(1)
+    public equals(p: Point3): boolean {
+        return this.x === p.x && this.y === p.y && this.z === p.z;
+    }
+    // theta(1)
     public sub(p : Point3) : Vector3 {
         return subVectors(this.toVector3(), p.toVector3())
     }
@@ -178,7 +182,7 @@ export function signedVolume3D(p1: Point3, p2: Point3, p3: Point3, p4: Point3): 
     const AC = p3.sub(p1);
     const AD = p4.sub(p1);
     const ABxAC = crossProduct(AB, AC);
-    return dotProduct(ABxAC, AD);
+    return dotProduct(ABxAC, AD) / 6; // dimensoes (3) fatorial
 }
 
 // theta(1)
