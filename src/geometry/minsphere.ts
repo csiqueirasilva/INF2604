@@ -4,6 +4,7 @@ import { det4x4 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, findExtremePoints, findFarthestPoints, PolarReference } from "@geometry/topology";
 import { shuffleArray } from "@helpers/arrays";
+import * as THREE from 'three';
 
 export function startSphere(p: Point3): PolarReference {
     let c: PolarReference = { origin: p.clone(), radius: 0 };
@@ -49,68 +50,6 @@ export function calcCircumcircle(p1: Point3, p2: Point3, p3: Point3): PolarRefer
     return { origin: Point3.fromVector3(center), radius };
 }
 
-// export function calcCircumsphere(p1: Point3, p2: Point3, p3: Point3, p4: Point3): PolarReference {
-
-//     errorIfPointsColinear4(p1, p2, p3, p4);
-
-//     // Helper function to calculate determinant of a 4x4 matrix
-
-//     const matrixA = [
-//         [p1.x, p1.y, p1.z, 1],
-//         [p2.x, p2.y, p2.z, 1],
-//         [p3.x, p3.y, p3.z, 1],
-//         [p4.x, p4.y, p4.z, 1],
-//     ];
-
-//     const p1LenSquared = (p1.x * p1.x) + (p1.y * p1.y) + (p1.z * p1.z);
-//     const p2LenSquared = (p2.x * p2.x) + (p2.y * p2.y) + (p2.z * p2.z);
-//     const p3LenSquared = (p3.x * p3.x) + (p3.y * p3.y) + (p3.z * p3.z);
-//     const p4LenSquared = (p4.x * p4.x) + (p4.y * p4.y) + (p4.z * p4.z);
-
-//     const matrixDx = [
-//         [p1LenSquared, p1.y, p1.z, 1],
-//         [p2LenSquared, p2.y, p2.z, 1],
-//         [p3LenSquared, p3.y, p3.z, 1],
-//         [p4LenSquared, p4.y, p4.z, 1],
-//     ];
-
-//     const matrixDy = [
-//         [p1LenSquared, p1.x, p1.z, 1],
-//         [p2LenSquared, p2.x, p2.z, 1],
-//         [p3LenSquared, p3.x, p3.z, 1],
-//         [p4LenSquared, p4.x, p4.z, 1],
-//     ];
-
-//     const matrixDz = [
-//         [p1LenSquared, p1.x, p1.y, 1],
-//         [p2LenSquared, p2.x, p2.y, 1],
-//         [p3LenSquared, p3.x, p3.y, 1],
-//         [p4LenSquared, p4.x, p4.y, 1],
-//     ];
-
-//     const matrixC = [
-//         [p1LenSquared, p1.x, p1.y, p1.z],
-//         [p2LenSquared, p2.x, p2.y, p2.z],
-//         [p3LenSquared, p3.x, p3.y, p3.z],
-//         [p4LenSquared, p4.x, p4.y, p4.z],
-//     ];
-
-//     const A = det4x4(matrixA);
-//     const Dx = det4x4(matrixDx);
-//     const Dy = det4x4(matrixDy);
-//     const Dz = det4x4(matrixDz);
-//     const C = det4x4(matrixC);
-
-//     const centerX = 0.5 * Dx / A;
-//     const centerY = 0.5 * Dy / A;
-//     const centerZ = 0.5 * Dz / A;
-//     const radius = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ - C / A);
-
-//     return { origin: new Point3(centerX, centerY, centerZ), radius };
-// }
-
-import * as THREE from 'three';
-
 export function calcCircumsphere(p1 :Point3, p2:Point3, p3:Point3, p4:Point3) : PolarReference {
     const a = new THREE.Vector3().copy(p1);
     const b = new THREE.Vector3().copy(p2);
@@ -135,7 +74,7 @@ export function calcCircumsphere(p1 :Point3, p2:Point3, p3:Point3, p4:Point3) : 
     // Calculate the determinant
     const det = ab.dot(acXad);
     if (det === 0) {
-        throw new Error("The points are coplanar or collinear, no unique sphere exists.");
+        throw new Error("Pontos colineares ou coplanares. Não existe esfera única.");
     }
 
     const center = new THREE.Vector3();
@@ -153,7 +92,7 @@ export function calcCircumsphere(p1 :Point3, p2:Point3, p3:Point3, p4:Point3) : 
 
 export function minSphere(points: Point3[]): PolarReference {
     if (points.length < 2) {
-        throw Error("Não podemos calcular a esfera mínima sem ao menos dois pontos.");
+        throw new Error("Não podemos calcular a esfera mínima sem ao menos dois pontos.");
     }
 
     let c: PolarReference;
@@ -179,14 +118,7 @@ export function minSphere(points: Point3[]): PolarReference {
     }
 
     if (c === null) {
-        throw Error("Não conseguiu gerar esfera mínima.");
-    }
-
-    if (c.radius > 10) {
-        // console.log("Erro!");
-        // console.log("calculado: ", c);
-        // console.log("PONTOS:", points);
-        // console.log("EMBARALHADO:", shuffled);
+        throw new Error("Não conseguiu gerar esfera mínima.");
     }
 
     return c;

@@ -18,14 +18,14 @@ export function checkIfVectorsOrthogonal(v1: Vector3, v2: Vector3): boolean {
 export function errorIfZeroLength2d(v: Vector2, msg: string = "Operação ilegal para vetor de tamanho 0"): void {
     const lengthV = vectorLength2d(v);
     if (lengthV === 0) {
-        throw Error(msg);
+        throw new Error(msg);
     }
 }
 
 export function errorIfZeroLength(v: Vector3, msg: string = "Operação ilegal para vetor de tamanho 0"): void {
     const lengthV = vectorLength(v);
     if (lengthV === 0) {
-        throw Error(msg);
+        throw new Error(msg);
     }
 }
 
@@ -155,7 +155,7 @@ export function errorIfPointsColinear4(p1: Point3, p2: Point3, p3: Point3, p4: P
     const A = det4x4(matrixA);
     console.log(p1, p2, p3, p4, A);
     if(A === 0) {
-        throw Error(`Operação ilegal: pontos colinerares; (${p1}; ${p2}; ${p3}; ${p4})`);        
+        throw new Error(`Operação ilegal: pontos colinerares; (${p1}; ${p2}; ${p3}; ${p4})`);        
     }
 }
 
