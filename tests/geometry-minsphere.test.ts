@@ -323,47 +323,69 @@ describe('calcCircumsphere', () => {
 });
 
 // pedir exemplos ao professor
-// describe('minSphere', () => {
-//     it('should correctly calculate the minimum enclosing sphere', () => {
-//         const points = [
-//             new Point3(-3.5244896725141084, -1.4311068951479977, -3.535487223906173),
-//             new Point3(-1.1497484301446126, -3.679556371037218, 1.2238739246149706),
-//             new Point3(0.4268636761900124, 4.740537315995464, 2.737482439889563),
-//             new Point3(-4.904329491597867, 2.615369354153019, 2.273861124267704),
-//             new Point3(2.591657315379015, -1.0628281689460106, 1.7108500626341083),
-//             new Point3(2.0449369930299692, -0.5108101038446611, 3.0666435146853726),
-//             new Point3(0.6636144805925825, -1.1765143293239677, 4.411065587495152),
-//             new Point3(-2.7697448055960505, -1.9935661320962583, -4.601356387821465),
-//             new Point3(-0.3872857203581548, -3.1922908760623026, 2.0060717083142654),
-//             new Point3(-3.072359951815391, -1.5841271475070928, 1.6858599195797126),
-//             new Point3(-3.765076530262381, -0.29087448389634574, -3.809451491490903),
-//             new Point3(4.167953190716604, -3.287102137389437, -3.0465341200596208),
-//             new Point3(-2.8673205559032855, 2.785094696280799, -3.0648580176328366),
-//             new Point3(-0.8787147734350986, -1.8899630401807221, 2.979525226878639),
-//             new Point3(-2.3062219881309676, 4.084768742956783, -0.1094832209097607),
-//             new Point3(-4.60440561402105, -3.8645572494002245, 3.534604074916949),
-//             new Point3(-0.14893683017677084, 4.064216978597361, -2.0578838910008934),
-//             new Point3(4.881763903599827, 2.06268312129459, 0.6245693927150597),
-//             new Point3(-0.788921932716522, 1.7325178180702299, -3.4040404143770764),
-//             new Point3(-2.5739780319768757, 1.2386328422485926, -2.453711179520659),
-//             new Point3(2.2891585715216856, 0.1830750662122682, -0.9115906497000292),
-//             new Point3(0.6900650154442678, 4.818736325829246, 4.622644915374998),
-//             new Point3(-3.543788006981159, 4.031192307068245, 1.7277377020079054),
-//             new Point3(-1.1223874599770567, -1.3101702134832727, -0.7599504956589449),
-//             new Point3(-3.293624998463911, -1.616784251647434, 4.86264035814755)
-//         ];
+describe('minSphere', () => {
+    
+    it('should correctly calculate the minimum enclosing sphere for collinear points', () => {
+        const points = [
+            new Point3(-5, 0, 0),
+            new Point3(5, 0, 0),
+            new Point3(-2, 0, 0),
+            new Point3(2, 0, 0)
+        ];
 
-//         const expectedResult = {
-//             origin: new Point3(-0.9578, 0.2187, 0.3885),
-//             radius: 7.097
-//         };
+        const expectedResult = {
+            origin: new Point3(0, 0, 0),
+            radius: 5
+        };
 
-//         const result = minSphere(points);
+        const result = minSphere(points);
 
-//         // Assert that the result is close to the expected values
-//         expect(result.origin.x).toBeCloseTo(expectedResult.origin.x);
-//         expect(result.origin.y).toBeCloseTo(expectedResult.origin.y);
-//         expect(result.origin.z).toBeCloseTo(expectedResult.origin.z);
-//         expect(result.radius).toBeCloseTo(expectedResult.radius);
-//     });
-// });
+        expect(result.origin.x).toBeCloseTo(expectedResult.origin.x, 4);
+        expect(result.origin.y).toBeCloseTo(expectedResult.origin.y, 4);
+        expect(result.origin.z).toBeCloseTo(expectedResult.origin.z, 4);
+        expect(result.radius).toBeCloseTo(expectedResult.radius, 4);
+    });
+
+    it('should correctly calculate the minimum enclosing sphere for points on a plane', () => {
+        const points = [
+            new Point3(1, 1, 0),
+            new Point3(-1, 1, 0),
+            new Point3(1, -1, 0),
+            new Point3(-1, -1, 0)
+        ];
+
+        const expectedResult = {
+            origin: new Point3(0, 0, 0),
+            radius: 1.4142
+        };
+
+        const result = minSphere(points);
+
+        expect(result.origin.x).toBeCloseTo(expectedResult.origin.x, 4);
+        expect(result.origin.y).toBeCloseTo(expectedResult.origin.y, 4);
+        expect(result.origin.z).toBeCloseTo(expectedResult.origin.z, 4);
+        expect(result.radius).toBeCloseTo(expectedResult.radius, 4);
+    });
+
+    it('should correctly calculate the minimum enclosing sphere for points in a small sphere', () => {
+        const points = [
+            new Point3(0.5, 0.5, 0.5),
+            new Point3(-0.5, -0.5, -0.5),
+            new Point3(0.5, -0.5, 0.5),
+            new Point3(-0.5, 0.5, -0.5)
+        ];
+
+        const expectedResult = {
+            origin: new Point3(0, 0, 0),
+            radius: 0.8660
+        };
+
+        const result = minSphere(points);
+
+        expect(result.origin.x).toBeCloseTo(expectedResult.origin.x, 4);
+        expect(result.origin.y).toBeCloseTo(expectedResult.origin.y, 4);
+        expect(result.origin.z).toBeCloseTo(expectedResult.origin.z, 4);
+        expect(result.radius).toBeCloseTo(expectedResult.radius, 4);
+    });
+
+});
