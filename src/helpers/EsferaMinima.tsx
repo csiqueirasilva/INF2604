@@ -36,7 +36,7 @@ function InternalComponent({ points } : { points : Point3[] }) {
                 } else if(coplanar && points.length === 3) {
                     const ms = calcCircumcircle(points[0], points[1], points[2]);
                     setCircumsphere(ms);
-                } else if(!coplanar && points.length > 3) {
+                } else if(!coplanar && points.length === 4) {
                     const ms = calcCircumsphere(points[0], points[1], points[2], points[3]);
                     setCircumsphere(ms);
                 }
