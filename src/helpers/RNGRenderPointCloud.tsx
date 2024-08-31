@@ -1,5 +1,4 @@
-import { Point3 } from "@geometry/affine";
-import { generateRNGPointCloudBasedOnStrategy, PointGenerationType } from "@geometry/points";
+import { generateRNGPointCloudBasedOnStrategy, Point3, PointGenerationType } from "@geometry/points";
 import { PolarReference } from "@geometry/topology";
 import BaseRenderPointCloud from "@helpers/BaseRenderPointCloud";
 import InstancedRenderedPoint from "@helpers/InstancedRenderedPoint";
@@ -9,9 +8,11 @@ import { getRandomColorHex } from "@helpers/RNGUtils";
 import { useSceneWithControlsContext, VIEW_TYPE } from "@helpers/SceneWithControlsContext";
 import { useValidColorHex } from "@helpers/useValidColorHex";
 import { Line, Sphere } from "@react-three/drei";
-import { button, useControls } from "leva";
+import { button, folder, useControls } from "leva";
 import React, { useCallback, useEffect, useState } from "react";
 import { Color, ColorRepresentation } from "three";
+import * as Clipboard from 'expo-clipboard';
+import { exportPoints, importPoints, MAX_DATA_EXPORT } from "@helpers/export";
 
 export interface RenderPointCloudProps {
     name: string;
@@ -70,8 +71,26 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
         ret['Randomizar pontos'] = button((get) => {
             setControls({ 'Pontos renderizados': Math.floor(minNumberOfPoints) + Math.floor(Math.random() * (maxNumberOfPoints - minNumberOfPoints)) });
         })
+        ret['Dados da vizualização'] = folder({
+            'Export to clipboard': button(async () => {
+                const str = await exportPoints(points);
+                await Clipboard.setStringAsync(str);
+                console.log("EXPORTED DATA", str);
+            }, { disabled: points.length > MAX_DATA_EXPORT }),
+            'Import': button(async () => {
+                const str = prompt("IMPORT DATA:");
+                if(str !== null) {
+                    const p = await importPoints(str);
+                    if(p.length <= MAX_DATA_EXPORT) {
+                        setPoints(p);
+                    } else {
+                        alert(`Só é possível importar até ${MAX_DATA_EXPORT}`);
+                    }
+                }
+            })
+        })
         return ret;
-    }, [ nPoints, name, maxNumberOfPoints, minNumberOfPoints, startColor, rngType, usedColor, ctx.viewType ]);
+    }, [ nPoints, points, name, maxNumberOfPoints, minNumberOfPoints, startColor, rngType, usedColor, ctx.viewType ]);
 
     const genPoints = useCallback(() => {
         if(nPoints >= 0) {

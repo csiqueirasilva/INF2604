@@ -1,5 +1,6 @@
-import { addVectors, Point3, scaleVector, subVectors, vectorLength } from "@geometry/affine";
-import { distanceBetweenPoints, normalizeVector } from "@geometry/euler";
+import { addVectors, distanceBetweenPoints, scaleVector, subVectors, vectorLength } from "@geometry/affine";
+import { normalizeVector } from "@geometry/euler";
+import { Point3 } from "@geometry/points";
 import { BufferGeometry, Vector3 } from "three";
 
 export function findClosestPoints(points: Point3[]): Point3[] {
@@ -258,7 +259,7 @@ export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
                 }
             }
         }
-        
+
     }
 
     if(point1 === null || point2 === null) {
@@ -266,4 +267,71 @@ export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
     }
 
     return [ point1, point2 ];
+}
+
+export function arePointsCollinear(points: Point3[]): boolean {
+    if (points.length < 3) return true; // Any two points are always collinear
+
+    const baseVector = points[1].sub(points[0]);
+
+    for (let i = 2; i < points.length; i++) {
+        const currentVector = points[i].sub(points[0]);
+        const crossProduct = baseVector.cross(currentVector);
+
+        if (!Point3.fromVector3(crossProduct).isZero()) {
+            return false; // Found a non-zero cross product, points are not collinear
+        }
+    }
+
+    return true; // All cross products are zero, points are collinear
+}
+
+export function arePointsCoplanar(points: Point3[]): boolean {
+    if (points.length < 4) return true; // Any three points are always coplanar
+
+    const baseVector1 = points[1].sub(points[0]);
+    const baseVector2 = points[2].sub(points[0]);
+    const normal = baseVector1.cross(baseVector2);
+
+    for (let i = 3; i < points.length; i++) {
+        const currentVector = points[i].sub(points[0]);
+        const dotProduct = normal.dot(currentVector);
+
+        if (dotProduct !== 0) {
+            return false; // Found a non-zero dot product, points are not coplanar
+        }
+    }
+
+    return true; // All dot products are zero, points are coplanar
+}
+
+export function findExtremePoints(points: Point3[]): [Point3, Point3] {
+    if (points.length < 2) {
+        throw new Error("At least two points are required to find extreme points.");
+    }
+
+    // Choose a direction vector using the first two points
+    const direction = points[1].sub(points[0]);
+
+    let minProjection = Infinity;
+    let maxProjection = -Infinity;
+    let minPoint = points[0];
+    let maxPoint = points[0];
+
+    for (let i = 0; i < points.length; i++) {
+        // Project point onto the direction vector
+        const projection = points[i].dot(Point3.fromVector3(direction));
+
+        // Update min and max projections
+        if (projection < minProjection) {
+            minProjection = projection;
+            minPoint = points[i];
+        }
+        if (projection > maxProjection) {
+            maxProjection = projection;
+            maxPoint = points[i];
+        }
+    }
+
+    return [ minPoint, maxPoint ];
 }

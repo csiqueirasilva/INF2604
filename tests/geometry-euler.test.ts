@@ -1,5 +1,6 @@
-import { crossProduct, dotProduct, Point3, vectorLength } from '@geometry/affine';
-import { angleBetweenVectors, angleBetweenVectorsCross, baricentricCoordsAtVectorField, checkIfVectorsOrthogonal, distanceBetweenPoints, errorIfPointsColinear3, fastAnglePqr, fastCalcAreaTriangle2d, fastCalcAreaTriangle3d, findOrthonormalBase, findPerpendicularComponent, normalizeVector, projectVector, pseudoAngleAsSquarePerimeter, pseudoAngleBetweenVectors } from '@geometry/euler';
+import { crossProduct, distanceBetweenPoints, dotProduct, vectorLength } from '@geometry/affine';
+import { angleBetweenVectors, angleBetweenVectorsCross, baricentricCoordsAtVectorField, checkIfVectorsOrthogonal, errorIfPointsColinear3, fastAnglePqr, fastCalcAreaTriangle2d, fastCalcAreaTriangle3d, findOrthonormalBase, findPerpendicularComponent, normalizeVector, projectVector, pseudoAngleAsSquarePerimeter, pseudoAngleBetweenVectors } from '@geometry/euler';
+import { Point3 } from '@geometry/points';
 import { Vector2, Vector3 } from 'three';
 
 describe('Euler utility tests', () => {

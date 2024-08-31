@@ -1,4 +1,80 @@
-import { Point3 } from "@geometry/affine";
+import { Vector3 } from "three";
+
+export const TOLERANCE_EPSILON: number = 1e-14;
+
+export class Point3 {
+    public x : number = 0
+    public y : number = 0
+    public z : number = 0
+    // theta(1)
+    public constructor(x = 0, y = 0, z = 0) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    // theta(1)
+    public toVector3 = () => new Vector3(this.x, this.y, this.z)
+    // theta(1)
+    public clone = () => new Point3(this.x, this.y, this.z)
+    // theta(1)
+    public equals(p: Point3): boolean {
+        return this.x === p.x && this.y === p.y && this.z === p.z;
+    }
+    // theta(1)
+    public sub(p : Point3) : Vector3 {
+        return this.toVector3().sub(p)
+    }
+    // theta(1)
+    public add(p : Point3) : Vector3 {
+        return this.toVector3().add(p)
+    }
+    // theta(1)
+    public distanceTo(p : Point3) : number {
+        const v = this.sub(p);
+        return v.length();
+    }
+    // theta(1)
+    public distanceToSq(p : Point3) : number {
+        const v = this.sub(p);
+        return v.lengthSq();
+    }
+    // theta(1)
+    public medianPointTo(p : Point3) : Point3 {
+        return Point3.fromVector3(this.toVector3().add(p.toVector3().sub(this).multiplyScalar(0.5)));
+    }
+    // helper
+    public cross(other: Point3): Point3 {
+        return new Point3(
+            this.y * other.z - this.z * other.y,
+            this.z * other.x - this.x * other.z,
+            this.x * other.y - this.y * other.x
+        );
+    }
+    // helper    
+    public isZero(): boolean {
+        return this.x === 0 && this.y === 0 && this.z === 0;
+    }
+    // theta(n)
+    static centroid(points: Point3[]): Point3 {
+        const n = points.length;
+        const sum = points.reduce(
+            (acc, point) => {
+                acc.x += point.x;
+                acc.y += point.y;
+                acc.z += point.z;
+                return acc;
+            },
+            { x: 0, y: 0, z: 0 }
+        );
+        return new Point3(sum.x / n, sum.y / n, sum.z / n);
+    }
+    // helper
+    public dot(other: Point3): number {
+        return this.x * other.x + this.y * other.y + this.z * other.z;
+    }
+    static fromVector3 = (v : Vector3) : Point3 => new Point3(v.x, v.y, v.z)
+    public toString = () : string => `(${this.x.toFixed(2)},${this.y.toFixed(2)},${this.z.toFixed(2)})`
+}
 
 export enum PointGenerationType {
     RANDOM_BRUTE_FORCE = "Random brute force",

@@ -1,52 +1,48 @@
-import { dotProduct, Point3, scaleVector, subVectors, vector2dLength as vectorLength2d, vectorLength, orientation2D, orientation3D, crossProduct } from "@geometry/affine";
-import { clamp } from "@geometry/math";
+import { dotProduct, scaleVector, subVectors, vector2dLength as vectorLength2d, vectorLength, orientation2D, orientation3D, crossProduct } from "@geometry/affine";
+import { clamp, det4x4 } from "@geometry/math";
+import { Point3 } from "@geometry/points";
 import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
 
-export function normalizeVector(v : Vector3) : Vector3 {
+export function normalizeVector(v: Vector3): Vector3 {
     errorIfZeroLength(v);
     const length = vectorLength(v);
     const ret = scaleVector(v, 1 / length);
     return ret;
 }
 
-export function distanceBetweenPoints(p : Point3, q : Point3) : number {
-    const v = p.sub(q);
-    return vectorLength(v);
-}
-
-export function checkIfVectorsOrthogonal(v1 : Vector3, v2 : Vector3) : boolean {
+export function checkIfVectorsOrthogonal(v1: Vector3, v2: Vector3): boolean {
     return dotProduct(v1, v2) === 0;
 }
 
-export function errorIfZeroLength2d(v : Vector2, msg : string = "Operação ilegal para vetor de tamanho 0") : void {
+export function errorIfZeroLength2d(v: Vector2, msg: string = "Operação ilegal para vetor de tamanho 0"): void {
     const lengthV = vectorLength2d(v);
-    if(lengthV === 0) {
+    if (lengthV === 0) {
         throw Error(msg);
-    }    
+    }
 }
 
-export function errorIfZeroLength(v : Vector3, msg : string = "Operação ilegal para vetor de tamanho 0") : void {
+export function errorIfZeroLength(v: Vector3, msg: string = "Operação ilegal para vetor de tamanho 0"): void {
     const lengthV = vectorLength(v);
-    if(lengthV === 0) {
+    if (lengthV === 0) {
         throw Error(msg);
-    }    
+    }
 }
 
-export function projectVector(u : Vector3, v : Vector3) : Vector3 {
+export function projectVector(u: Vector3, v: Vector3): Vector3 {
     errorIfZeroLength(v);
     const unitV = normalizeVector(v);
     const dot = dotProduct(u, unitV);
     return scaleVector(unitV, dot);
 }
 
-export function findPerpendicularComponent(u : Vector3, v : Vector3) : Vector3 {
+export function findPerpendicularComponent(u: Vector3, v: Vector3): Vector3 {
     const u1 = projectVector(u, v);
     const u2 = subVectors(u, u1);
     return u2;
 }
 
-export function angleBetweenVectors(u : Vector3, v : Vector3) : number {
+export function angleBetweenVectors(u: Vector3, v: Vector3): number {
     errorIfZeroLength(u);
     errorIfZeroLength(v);
     const dot = dotProduct(u, v);
@@ -58,7 +54,7 @@ export function angleBetweenVectors(u : Vector3, v : Vector3) : number {
     return Math.acos(clampedCosTheta);
 }
 
-export function pseudoAngleBetweenVectors(u : Vector3, v : Vector3) : number {
+export function pseudoAngleBetweenVectors(u: Vector3, v: Vector3): number {
     errorIfZeroLength(u);
     errorIfZeroLength(v);
     const unitU = normalizeVector(u);
@@ -69,13 +65,13 @@ export function pseudoAngleBetweenVectors(u : Vector3, v : Vector3) : number {
 }
 
 // exercicio slide primeira aula
-export function pseudoAngleAsSquarePerimeter(u : Vector2) : number {
+export function pseudoAngleAsSquarePerimeter(u: Vector2): number {
     // desconsiderar validacoes
     errorIfZeroLength2d(u);
     let acc = 0; // inicializacao apenas para usar o clamp corretamente
     // as comparacoes estao dispostas para ser ccw
     // foram adicionadas mais algumas somas para ficar mais próximo do enunciado do pseudoangulo fazer a imagem [0,8)
-    if(u.y >= 0) {
+    if (u.y >= 0) {
         if (u.x >= 0) {
             acc = 2 * (u.y / (u.x + u.y));
         } else {
@@ -87,23 +83,23 @@ export function pseudoAngleAsSquarePerimeter(u : Vector2) : number {
         } else {
             acc = 6 + (2 * (-u.x / (-u.x + u.y)));
         }
-    } 
+    }
     // desconsiderar clamp para melhorar precisao numerica
     let ret = clamp(acc, 0, 8); // apenas para melhorar a precisao numerica
     return ret;
 }
 
-export function fastCalcAreaTriangle2d(p : Point3, q : Point3, r : Point3) : number {
+export function fastCalcAreaTriangle2d(p: Point3, q: Point3, r: Point3): number {
     const orient = orientation2D(p, q, r);
     return orient / 2;
 }
 
-export function fastCalcAreaTriangle3d(p : Point3, q : Point3, r : Point3, t : Point3) : number {
+export function fastCalcAreaTriangle3d(p: Point3, q: Point3, r: Point3, t: Point3): number {
     const orient = orientation3D(p, q, r, t);
     return orient / 6; // 6 = d!
 }
 
-export function fastAnglePqr(p : Point3, q : Point3, r : Point3) : number {
+export function fastAnglePqr(p: Point3, q: Point3, r: Point3): number {
     const orient = orientation2D(p, q, r);
     const lenPQ = vectorLength(p.sub(q));
     const lenRQ = vectorLength(r.sub(q));
@@ -112,7 +108,7 @@ export function fastAnglePqr(p : Point3, q : Point3, r : Point3) : number {
     return ret;
 }
 
-export function angleBetweenVectorsCross(u : Vector3, v : Vector3) : number {
+export function angleBetweenVectorsCross(u: Vector3, v: Vector3): number {
     const normalizedU = normalizeVector(u);
     const normalizedV = normalizeVector(v);
     const cross = crossProduct(normalizedU, normalizedV);
@@ -122,12 +118,12 @@ export function angleBetweenVectorsCross(u : Vector3, v : Vector3) : number {
 }
 
 export interface Base3 {
-    u : Vector3;
-    v : Vector3;
-    w : Vector3;
+    u: Vector3;
+    v: Vector3;
+    w: Vector3;
 }
 
-export function findOrthonormalBase(n : Vector3) : Base3 {
+export function findOrthonormalBase(n: Vector3): Base3 {
     const w = normalizeVector(n);
     let v = crossProduct(w, new Vector3(1, 0, 0));
     // se w era paralelo com o eixo x, usamos o eixo y
@@ -136,17 +132,31 @@ export function findOrthonormalBase(n : Vector3) : Base3 {
     }
     v = normalizeVector(v);
     const u = normalizeVector(crossProduct(v, w));
-    const ret : Base3 = {
+    const ret: Base3 = {
         u, v, w
     };
     return ret;
 }
 
-export function errorIfPointsColinear3(p1: Point3, p2 : Point3, p3: Point3) : void {
+export function errorIfPointsColinear3(p1: Point3, p2: Point3, p3: Point3): void {
     const a = p1.sub(p2);
     const b = p3.sub(p2);
     const cross = crossProduct(a, b);
-    errorIfZeroLength(cross, "Operação ilegal: pontos colinerares");
+    errorIfZeroLength(cross, `Operação ilegal: pontos colinerares; (${p1}; ${p2}; ${p3})`);
+}
+
+export function errorIfPointsColinear4(p1: Point3, p2: Point3, p3: Point3, p4: Point3): void {
+    const matrixA = [
+        [p1.x, p1.y, p1.z, 1],
+        [p2.x, p2.y, p2.z, 1],
+        [p3.x, p3.y, p3.z, 1],
+        [p4.x, p4.y, p4.z, 1],
+    ];
+    const A = det4x4(matrixA);
+    console.log(p1, p2, p3, p4, A);
+    if(A === 0) {
+        throw Error(`Operação ilegal: pontos colinerares; (${p1}; ${p2}; ${p3}; ${p4})`);        
+    }
 }
 
 // exercício

@@ -14,6 +14,8 @@ export enum VIEW_TYPE {
 export interface ISceneWithControlsContext {
     sceneLoaded : boolean,
     setSceneLoaded: React.Dispatch<React.SetStateAction<boolean>>
+    errorMsg : string|undefined,
+    setErrorMsg: React.Dispatch<React.SetStateAction<string|undefined>>
     orbitControlsRef: React.MutableRefObject<OrbitControlsImpl | null>
     viewType: VIEW_TYPE
 }
@@ -23,6 +25,7 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
     const [ sceneLoaded, setSceneLoaded ] = useState(false);
     const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
     const { camera } = useThree();
+    const [ errorMsg, setErrorMsg ] = useState<string|undefined>(undefined);
 
     const [values, setControls] = useControls(`Cena`, () => {
         const ret: any = {}
@@ -58,7 +61,12 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
     }, []);
 
     const o : ISceneWithControlsContext = {
-        sceneLoaded, setSceneLoaded, orbitControlsRef, viewType: values['Estilo câmera']
+        sceneLoaded, 
+        setSceneLoaded, 
+        orbitControlsRef, 
+        viewType: values['Estilo câmera'],
+        setErrorMsg,
+        errorMsg
     };
 
     return (

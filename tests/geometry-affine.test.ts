@@ -1,4 +1,5 @@
-import { Point3, orientation1D, OrientationCase, orientation2D, orientation3D, signedArea2D, signedVolume3D, rotateVector, addVectors, crossProduct, dotProduct, interpolatePoints, multiplyPointByScalar, scaleVector, subVectors, translatePoint, vector2dLength, vectorLength } from "@geometry/affine";
+import { orientation1D, OrientationCase, orientation2D, orientation3D, signedArea2D, signedVolume3D, rotateVector, addVectors, crossProduct, dotProduct, interpolatePoints, multiplyPointByScalar, scaleVector, subVectors, translatePoint, vector2dLength, vectorLength } from "@geometry/affine";
+import { Point3 } from "@geometry/points";
 import { Vector2, Vector3 } from "three";
 
 describe('Geometry Affine Class and Utility Functions', () => {

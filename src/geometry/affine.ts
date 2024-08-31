@@ -1,58 +1,7 @@
 import { RADIAN } from "@geometry/constants";
-import { distanceBetweenPoints } from "@geometry/euler";
+import { Point3 } from "@geometry/points";
 import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
-
-export class Point3 {
-    public x : number = 0
-    public y : number = 0
-    public z : number = 0
-    // theta(1)
-    public toVector3 = () => new Vector3(this.x, this.y, this.z)
-    // theta(1)
-    public clone = () => new Point3(this.x, this.y, this.z)
-    // theta(1)
-    public constructor(x = 0, y = 0, z = 0) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    // theta(1)
-    public equals(p: Point3): boolean {
-        return this.x === p.x && this.y === p.y && this.z === p.z;
-    }
-    // theta(1)
-    public sub(p : Point3) : Vector3 {
-        return subVectors(this.toVector3(), p.toVector3())
-    }
-    // theta(1)
-    public add(p : Point3) : Vector3 {
-        return addVectors(this.toVector3(), p.toVector3())
-    }
-    // theta(1)
-    public distanceTo(p : Point3) : number {
-        return distanceBetweenPoints(this, p)
-    }
-    // theta(1)
-    public medianPointTo(p : Point3) : Point3 {
-        return Point3.fromVector3(this.toVector3().add(p.toVector3().sub(this).multiplyScalar(0.5)));
-    }
-    // theta(n)
-    static centroid(points: Point3[]): Point3 {
-        const n = points.length;
-        const sum = points.reduce(
-            (acc, point) => {
-                acc.x += point.x;
-                acc.y += point.y;
-                acc.z += point.z;
-                return acc;
-            },
-            { x: 0, y: 0, z: 0 }
-        );
-        return new Point3(sum.x / n, sum.y / n, sum.z / n);
-    }
-    static fromVector3 = (v : Vector3) : Point3 => new Point3(v.x, v.y, v.z)
-}
 
 // theta(1)
 export function scaleVector(v1 : Vector3, n : number) : Vector3 {
@@ -61,6 +10,12 @@ export function scaleVector(v1 : Vector3, n : number) : Vector3 {
     ret.y *= n;
     ret.z *= n;
     return ret;
+}
+
+// theta(1)
+export function distanceBetweenPoints(p: Point3, q: Point3): number {
+    const v = p.sub(q);
+    return vectorLength(v);
 }
 
 // theta(1)
@@ -141,14 +96,12 @@ export function orientation1D(x1: number, x2: number): OrientationCase {
 }
 
 // theta(1)
-// a rigor tinha que estar em euler.ts por semantica, mas para nao gerar dependencia ciclica fica aqui
 export function vectorLength(v : Vector3) {
     const dot = dotProduct(v, v);
     return Math.sqrt(dot);
 }
 
 // theta(1)
-// a rigor tinha que estar em euler.ts por semantica, mas para nao gerar dependencia ciclica fica aqui
 export function vector2dLength(v : Vector2) {
     return Math.sqrt((v.x * v.x) + (v.y * v.y));
 }

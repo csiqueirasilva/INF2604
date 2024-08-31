@@ -45,6 +45,14 @@ function InternalComponent({ children }: Props) {
                     </Html>
                     :
                     <>
+                        {
+                            ctx.errorMsg &&
+                            <Html>
+                                {
+                                    createPortal(<div style={{ position: 'absolute', top: dims.height / 2, left: 0, width: dims.width, textAlign: 'center' }}>{ ctx.errorMsg }</div>, document.body)
+                                }
+                            </Html>
+                        }
                         <group>
                             <group renderOrder={-100}>
                                 <AxesHelper length={1000} />
