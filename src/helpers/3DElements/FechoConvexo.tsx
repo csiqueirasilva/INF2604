@@ -21,11 +21,11 @@ function InternalComponent({ points } : { points : Point3[] }) {
         try {
             const hp = quickHull(points);
             setHullPoints(hp)
-            setCoplanar(arePointsCoplanar(hullPoints));
+            setCoplanar(arePointsCoplanar(hp));
         } catch (e) {
             console.log(e)
         }
-    }, [ points ]);
+    }, [ points, ctx.viewType ]);
 
     const colors = useMemo(() => {
         const colorArray : Color[] = [];

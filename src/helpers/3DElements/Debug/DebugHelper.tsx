@@ -80,7 +80,6 @@ export function PushDebugObject(id: string, object: Object3D) {
         moduleSetter((prev) => {
             const copy = [ ...prev ];
             const idx = copy.findIndex(x => x.id === id);
-            console.log(idx)
             if(idx !== -1) {
                 copy[idx].objects.push(object);
             } else {

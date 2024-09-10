@@ -49,7 +49,6 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
 
     const startColor = useValidColorHex(color);
 
-    const camera = {  }
     const ctx = useSceneWithControlsContext();
 
     const [usedColor, setUsedColor] = useState<string>(startColor);

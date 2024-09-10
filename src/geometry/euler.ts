@@ -161,7 +161,6 @@ export function errorIfPointsColinear4(p1: Point3, p2: Point3, p3: Point3, p4: P
         [p4.x, p4.y, p4.z, 1],
     ];
     const A = det4x4(matrixA);
-    console.log(p1, p2, p3, p4, A);
     if(A === 0) {
         throw new Error(`Operação ilegal: pontos colinerares; (${p1}; ${p2}; ${p3}; ${p4})`);        
     }
