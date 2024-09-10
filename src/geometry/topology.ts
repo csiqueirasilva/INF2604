@@ -241,7 +241,6 @@ function addHullPoints(name : string, initialHull : Point3[], points: Point3[], 
 
     const midPointL = a.medianPointTo(farthestPoint);
     const midPointR = farthestPoint.medianPointTo(c);
-    const midPointF = midPoint.medianPointTo(farthestPoint);
     const leftLines = leftSet.map(x => createDebugLine([ midPointL, x], "green", "orange", 1, 0.1));
     const rightLines = rightSet.map(x => createDebugLine([ midPointR, x], "green", "violet", 1, 0.1));
     
