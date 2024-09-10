@@ -3,14 +3,17 @@ import { Point3 } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, boundingSphereInCloud, findClosestPoints, findExtremePoints, findFarthestPoints, PolarReference, quickHull } from "@geometry/topology";
 import RNGRenderPointCloud, { RenderPointCloudProps } from "@helpers/3DElements/RNGRenderPointCloud";
 import { useSceneWithControlsContext } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
+import { createSolidFromPoints } from "@helpers/ThreeUtils";
 import { Line, Sphere } from "@react-three/drei";
 import { button, folder, useControls } from "leva";
 import { useEffect, useMemo, useState } from "react";
-import { Color, Line3, LineBasicMaterial, LineSegments } from "three";
+import { BackSide, Color, FrontSide, Line3, LineBasicMaterial, LineSegments, Mesh } from "three";
+import { ConvexGeometry, Geometry } from "three-stdlib";
 
 function InternalComponent({ points } : { points : Point3[] }) {
     
     const [ hullPoints, setHullPoints ] = useState<Point3[]>([])
+    const [ coplanar, setCoplanar ] = useState(false);
 
     const ctx = useSceneWithControlsContext();
 
@@ -18,26 +21,11 @@ function InternalComponent({ points } : { points : Point3[] }) {
         try {
             const hp = quickHull(points);
             setHullPoints(hp)
-            console.log(hp)
+            setCoplanar(arePointsCoplanar(hullPoints));
         } catch (e) {
             console.log(e)
         }
     }, [ points ]);
-
-    // const values = useControls({
-    //     'Esfera mínima': folder({
-    //         'cor-m': '#549fff',
-    //         'visivel-m': true
-    //     }),
-    //     'Bounding sphere': folder({
-    //         'cor-b': '#ff7676',
-    //         'visivel-b': true
-    //     }),
-    //     'Circumsphere': folder({
-    //         'cor-c': '#76ff76',
-    //         'visivel-c': true
-    //     })
-    // })
 
     const colors = useMemo(() => {
         const colorArray : Color[] = [];
@@ -54,14 +42,22 @@ function InternalComponent({ points } : { points : Point3[] }) {
         return colorArray;
       }, [hullPoints]);
 
+    const renderPoints = hullPoints.map(x => x.toVector3());
+
     return (
         <>
             {
-                hullPoints.length >= 2 &&
-                <Line 
-                    points={hullPoints.map(x => x.toVector3()).concat([ hullPoints[0].toVector3() ]) } 
-                    lineWidth={2} 
-                    vertexColors={colors} />
+                hullPoints.length >= 2 && 
+                (
+                    coplanar ?
+                    <Line 
+                        points={renderPoints.concat([ hullPoints[0].toVector3() ])} 
+                        lineWidth={2} 
+                        vertexColors={colors} /> :
+                    <mesh geometry={new ConvexGeometry(renderPoints)}>
+                        <meshBasicMaterial color={0x00ff00} opacity={0.5} transparent side={BackSide} />
+                    </mesh>
+                )
             }
         </>
     )

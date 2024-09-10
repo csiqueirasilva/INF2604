@@ -5,6 +5,7 @@ import { Point3 } from "@geometry/points";
 import { ClearDebugObject, ClearDebugObjects, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
 import { createDebugLine, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { BufferGeometry, Vector3 } from "three";
+import { ConvexHull3D, Face } from "@geometry/quickhull3d";
 
 export function findClosestPoints(points: Point3[]): Point3[] {
     const n = points.length;
@@ -312,12 +313,29 @@ function quickHull2d(name : string, points: Point3[]) : Point3[] {
 }
 
 function quickHull3d(points: Point3[]) : Point3[] {
-    const ret : Point3[] = [];
+    let ch = new ConvexHull3D();
+    ch.setFromPoints(points.map(x => x.toVector3()));
+    ch.compute();
+    function extractOrderedPointsFromFace(face: Face): Vector3[] {
+        const orderedPoints: Vector3[] = [];
+    
+        let edge = face.edge; // Start at the first edge
+        do {
+            const vertex = edge.tail().point; // Assuming tail() gives us the vertex at the tail
+            orderedPoints.push(new Vector3(vertex.x, vertex.y, vertex.z));
+            edge = edge.next; // Move to the next edge
+        } while (edge !== face.edge); // Stop when we've looped back to the starting edge
+    
+        return orderedPoints;
+    }
+    const ret = ch.faces.flatMap(f => extractOrderedPointsFromFace(f).map(v => Point3.fromVector3(v)));
     return ret;
 }
 
 // QuickHull foi implementado para encontrar os pontos mais distantes
 export function quickHull(points: Point3[], name : string = "QuickHull"): Point3[] {
+
+    let ret : Point3[] = [];
 
     ClearDebugObject(name);
 
@@ -325,13 +343,13 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
         // quickhull 2d
         const [ rotatedPoints, rotationMatrix ] = rotatePointsToZPlane(points);
         const hulledPoints = quickHull2d(name, rotatedPoints);
-        points = rotatePointsReverseRotation(hulledPoints, rotationMatrix);
-        return points;
+        ret = rotatePointsReverseRotation(hulledPoints, rotationMatrix);
     } else {
         // quickhull 3d
+        ret = quickHull3d(points);
     }
 
-    return [];
+    return ret;
 }
 
 export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
