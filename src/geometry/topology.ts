@@ -1,6 +1,9 @@
-import { addVectors, distanceBetweenPoints, scaleVector, subVectors, vectorLength } from "@geometry/affine";
-import { normalizeVector } from "@geometry/euler";
+import { addVectors, crossProduct, distanceBetweenPoints, orientation2D, OrientationCase, scaleVector, subVectors, vectorLength } from "@geometry/affine";
+import { calculatePlaneNormal, normalizeVector } from "@geometry/euler";
+import { invertMatrix3x3 } from "@geometry/math";
 import { Point3 } from "@geometry/points";
+import { ClearDebugObject, ClearDebugObjects, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
+import { createDebugLine, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { BufferGeometry, Vector3 } from "three";
 
 export function findClosestPoints(points: Point3[]): Point3[] {
@@ -140,7 +143,7 @@ export function boundingSphereInCloud(points: Point3[]): PolarReference {
 }
 
 // isso não faz sentido semanticamente, mas é uma função helper - os pontos são tratados como vetores
-function crossProduct(p1: Point3, p2: Point3, p3: Point3): Point3 {
+function helperPointsCrossProduct(p1: Point3, p2: Point3, p3: Point3): Point3 {
     const u1 = p2.x - p1.x;
     const u2 = p2.y - p1.y;
     const u3 = p2.z - p1.z;
@@ -158,21 +161,133 @@ function crossProduct(p1: Point3, p2: Point3, p3: Point3): Point3 {
 
 // o plano é o formado pelos pontos p1, p2 e p3 - o ponto em questão é o p
 export function distanceFromPlane(p1: Point3, p2: Point3, p3: Point3, p: Point3): number {
-    const normal = crossProduct(p1, p2, p3);
+    const normal = helperPointsCrossProduct(p1, p2, p3);
     const d = -normal.x * p1.x - normal.y * p1.y - normal.z * p1.z;
     return Math.abs(normal.x * p.x + normal.y * p.y + normal.z * p.z + d) /
            Math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
 }
 
-// QuickHull foi implementado para encontrar os pontos mais distantes
-export function quickHull(points: Point3[]): Point3[] {
-    if (points.length < 4) {
-        throw new Error("A convex hull cannot be formed with fewer than 4 points.");
+export function distanceFromLine(point: Point3, a: Point3, b: Point3): number {
+    const A = b.y - a.y;
+    const B = a.x - b.x;
+    const C = b.x * a.y - a.x * b.y;
+    return Math.abs(A * point.x + B * point.y + C) / Math.sqrt(A * A + B * B);
+}
+
+export function centroidFromPoints(...points: Point3[]): Point3 {
+    const centroid = new Point3(0, 0, 0);
+
+    points.forEach((point) => {
+        centroid.x += point.x;
+        centroid.y += point.y;
+        centroid.z += point.z;
+    });
+
+    const numberOfPoints = points.length;
+    if (numberOfPoints > 0) {
+        centroid.x /= numberOfPoints;
+        centroid.y /= numberOfPoints;
+        centroid.z /= numberOfPoints;
     }
+
+    return centroid;
+}
+
+export function isPointInsideTriangle(p: Point3, a: Point3, b: Point3, c: Point3): boolean {
+    const o1 = orientation2D(a, b, p);
+    const o2 = orientation2D(b, c, p);
+    const o3 = orientation2D(c, a, p);
+    return (o1 === o2) && (o2 === o3);
+}
+
+function addHullPoints(name : string, initialHull : Point3[], points: Point3[], p1: Point3, p2: Point3): void {
+    if (points.length === 0) return;
+
+    let farthestPoint = points[0];
+    let maxDistance = -Infinity;
+
+    points.forEach(p => {
+        const distance = distanceFromLine(p, p1, p2);
+        if (distance > maxDistance) {
+            maxDistance = distance;
+            farthestPoint = p;
+        }
+    });
+
+    const idx1 = initialHull.indexOf(p1);
+    const idx2 = initialHull.indexOf(p2);
+
+    const minPos = Math.min(idx1, idx2);
+    const maxPos = Math.max(idx1, idx2);
+
+    if(minPos === 0 && maxPos === initialHull.length - 1) {
+        initialHull.splice(0, 0, farthestPoint);
+    } else {
+        initialHull.splice(minPos + 1, 0, farthestPoint);
+    }
+
+    const midPoint = p2.medianPointTo(p1);
+
+    const filteredPoints = points.filter(x => !isPointInsideTriangle(x, p1, p2, farthestPoint));
+
+    let m1 = farthestPoint;
+    let m2 = midPoint;
+
+    const { leftSet, rightSet } = quickHullSplitPoints2d(filteredPoints, m2, m1);
+
+    let a = p1;
+    let b = farthestPoint;
+    let c = p2;
+
+    const midPointL = a.medianPointTo(farthestPoint);
+    const midPointR = farthestPoint.medianPointTo(c);
+    const midPointF = midPoint.medianPointTo(farthestPoint);
+    const leftLines = leftSet.map(x => createDebugLine([ midPointL, x], "green", "orange", 1, 0.1));
+    const rightLines = rightSet.map(x => createDebugLine([ midPointR, x], "green", "violet", 1, 0.1));
+    
+    PushDebugObjects(
+        name, 
+        createDebugLine([ p1, p2 ], "pink", "pink", 2, 0.2),
+        createDebugLine([ p1, farthestPoint ], "pink", "pink", 2, 0.2),
+        createDebugLine([ p2, farthestPoint ], "pink", "pink", 2, 0.2),
+        createDebugLine(initialHull), 
+        createDebugText(`p2 - ${a === p2 ? 'A' : 'C'}`, p2.toVector3()),
+        createDebugText(`p1 - ${a === p1 ? 'A' : 'C'}`, p1.toVector3()),
+        createDebugText(`F`, farthestPoint.toVector3()),
+        createDebugLine([ midPoint, farthestPoint ], "green", "green", 1),
+        ...leftLines,
+        ...rightLines
+    );
+
+    addHullPoints(name, initialHull, leftSet , a, b);
+    addHullPoints(name, initialHull, rightSet , b, c);
+}
+
+function quickHullSplitPoints2d(points: Point3[], a: Point3, b: Point3) {
+    const leftSet: Point3[] = [];
+    const rightSet: Point3[] = [];
+
+    points.forEach(p => {
+        const orientationAB = orientation2D(a, b, p);
+        if (orientationAB === OrientationCase.COUNTER_CLOCK_WISE) {
+            leftSet.push(p);
+        } else if (orientationAB === OrientationCase.CLOCK_WISE) {
+            rightSet.push(p);
+        } // todo: handle collinear
+    });
+
+    return { leftSet, rightSet };
+}
+
+function quickHull2d(name : string, points: Point3[]) : Point3[] {
+
+    const ret : Point3[] = [];
 
     let minXPoint = points[0];
     let maxXPoint = points[0];
 
+    // Find the points with minimum and maximum x coordinates, as these will always be part of the convex hull. If many points with the same minimum/maximum x exist, use the ones with the minimum/maximum y, respectively.
+    // todo: if many points have same x, use y
     points.forEach(p => {
         if (p.x < minXPoint.x) minXPoint = p;
         if (p.x > maxXPoint.x) maxXPoint = p;
@@ -180,53 +295,44 @@ export function quickHull(points: Point3[]): Point3[] {
 
     const initialHull: Point3[] = [minXPoint, maxXPoint];
 
-    const leftSet : Point3[] = [];
-    const rightSet : Point3[] = [];
+    // Use the line formed by the two points to divide the set into two subsets of points, which will be processed recursively. We next describe how to determine the part of the hull above the line; the part of the hull below the line can be determined similarly.
+    // build 2 subsets
+    const { leftSet, rightSet } = quickHullSplitPoints2d(points, minXPoint, maxXPoint);
 
-    points.forEach(p => {
-        const cp = crossProduct(minXPoint, maxXPoint, p);
-        if (cp.z > 0) {
-            leftSet.push(p);
-        } else if (cp.z < 0) {
-            rightSet.push(p);
-        }
-    });
+    PushDebugObjects(
+        name, 
+        createDebugLine(initialHull),
+        createDebugText("minXPoint", minXPoint.toVector3()),
+        createDebugText("maxXPoint", maxXPoint.toVector3())
+    );
 
-    function addHullPoints(points: Point3[], p1: Point3, p2: Point3): void {
-        if (points.length === 0) return;
-
-        let furthestPoint = points[0];
-        let maxDistance = -Infinity;
-
-        points.forEach(p => {
-            const distance = distanceFromPlane(p1, p2, furthestPoint, p);
-            if (distance > maxDistance) {
-                maxDistance = distance;
-                furthestPoint = p;
-            }
-        });
-
-        initialHull.push(furthestPoint);
-
-        const points1 : Point3[] = [];
-        const points2 : Point3[] = [];
-
-        points.forEach(p => {
-            const cp1 = crossProduct(p1, furthestPoint, p);
-            const cp2 = crossProduct(furthestPoint, p2, p);
-
-            if (cp1.z > 0) points1.push(p);
-            if (cp2.z > 0) points2.push(p);
-        });
-
-        addHullPoints(points1, p1, furthestPoint);
-        addHullPoints(points2, furthestPoint, p2);
-    }
-
-    addHullPoints(leftSet, minXPoint, maxXPoint);
-    addHullPoints(rightSet, maxXPoint, minXPoint);
+    addHullPoints(name, initialHull, leftSet, minXPoint, maxXPoint);
+    addHullPoints(name, initialHull, rightSet, maxXPoint, minXPoint);
 
     return initialHull;
+}
+
+function quickHull3d(points: Point3[]) : Point3[] {
+    const ret : Point3[] = [];
+    return ret;
+}
+
+// QuickHull foi implementado para encontrar os pontos mais distantes
+export function quickHull(points: Point3[], name : string = "QuickHull"): Point3[] {
+
+    ClearDebugObject(name);
+
+    if(arePointsCoplanar(points)) {
+        // quickhull 2d
+        const [ rotatedPoints, rotationMatrix ] = rotatePointsToZPlane(points);
+        const hulledPoints = quickHull2d(name, rotatedPoints);
+        points = rotatePointsReverseRotation(hulledPoints, rotationMatrix);
+        return points;
+    } else {
+        // quickhull 3d
+    }
+
+    return [];
 }
 
 export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
@@ -284,6 +390,86 @@ export function arePointsCollinear(points: Point3[]): boolean {
     }
 
     return true; // All cross products are zero, points are collinear
+}
+
+export function rotatePointsReverseRotation(points: Point3[], rotationMatrix: number[][]): Point3[] {
+    const ret: Point3[] = [];
+
+    // Invert the rotation matrix
+    const inverseMatrix = invertMatrix3x3(rotationMatrix);
+
+    // Apply the inverse matrix to each point
+    for (const point of points) {
+        const rotatedPoint = applyRotationMatrix(point.toVector3(), inverseMatrix);
+        ret.push(Point3.fromVector3(rotatedPoint));
+    }
+
+    return ret;
+}
+
+export function applyRotationMatrix(vector: Vector3, rotationMatrix: number[][]): Vector3 {
+    const newX = rotationMatrix[0][0] * vector.x + rotationMatrix[0][1] * vector.y + rotationMatrix[0][2] * vector.z;
+    const newY = rotationMatrix[1][0] * vector.x + rotationMatrix[1][1] * vector.y + rotationMatrix[1][2] * vector.z;
+    const newZ = rotationMatrix[2][0] * vector.x + rotationMatrix[2][1] * vector.y + rotationMatrix[2][2] * vector.z;
+    
+    return new Vector3(newX, newY, newZ);
+}
+
+export function calculateRotationMatrix(normal: Vector3, inputAxis: Vector3 = new Vector3(0, 0, 1)): number[][] {
+    const normalizedNormal = normalizeVector(normal);
+    inputAxis = normalizeVector(inputAxis);
+    const axis = normalizeVector(crossProduct(normalizedNormal, inputAxis));
+
+    if (normalizedNormal.equals(inputAxis) || vectorLength(axis) === 0) {
+        return [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ];
+    }
+    
+    const angle = Math.acos(normalizedNormal.dot(inputAxis));
+
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+    const oneMinusCosA = 1 - cosA;
+
+    const ux = axis.x, uy = axis.y, uz = axis.z;
+
+    const rotationMatrix = [
+        [
+            cosA + ux * ux * oneMinusCosA,
+            ux * uy * oneMinusCosA - uz * sinA,
+            ux * uz * oneMinusCosA + uy * sinA
+        ],
+        [
+            uy * ux * oneMinusCosA + uz * sinA,
+            cosA + uy * uy * oneMinusCosA,
+            uy * uz * oneMinusCosA - ux * sinA
+        ],
+        [
+            uz * ux * oneMinusCosA - uy * sinA,
+            uz * uy * oneMinusCosA + ux * sinA,
+            cosA + uz * uz * oneMinusCosA
+        ]
+    ];
+
+    return rotationMatrix;
+} 
+
+export function rotatePointsToZPlane(points: Point3[]): [Point3[], number[][]] {
+    const ret: Point3[] = [];
+    
+    const normal = calculatePlaneNormal(points[0], points[1], points[2]);
+    
+    const rotationMatrix = calculateRotationMatrix(normal, new Vector3(0, 0, 1));
+
+    for (const point of points) {
+        const rotatedPoint = Point3.fromVector3(applyRotationMatrix(point.toVector3(), rotationMatrix));
+        ret.push(rotatedPoint);
+    }
+
+    return [ret, rotationMatrix];
 }
 
 export function arePointsCoplanar(points: Point3[]): boolean {

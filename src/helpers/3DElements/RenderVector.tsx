@@ -1,8 +1,8 @@
+import BaseRenderVector from "@helpers/3DElements/BaseObjects/BaseRenderVector";
 import { getRandomColorHex } from "@helpers/RNGUtils";
 import { folder, useControls } from "leva";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import BaseRenderVector from "./BaseRenderVector";
 
 interface Props {
     name: string,

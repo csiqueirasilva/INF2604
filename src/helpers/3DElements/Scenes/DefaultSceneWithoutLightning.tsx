@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Box, Html, isWebGL2Available, Loader, OrbitControls, useProgress } from '@react-three/drei'
-import AxesHelper from "@helpers/AxesHelper";
 import { Leva, useControls } from "leva";
 import { Platform, useWindowDimensions, View } from "react-native";
-import AbsoluteBox from "@helpers/AbsoluteBox";
 import { HEADER_HEIGHT } from "@components/HeaderWithBackButton";
-import { CAMERA_INITIAL_POSITION, SceneWithControlsProvider, useSceneWithControlsContext } from "@helpers/SceneWithControlsContext";
 import { createPortal } from "react-dom";
 import { Camera } from "three";
+import AxesHelper from "@helpers/3DElements/AxesHelper";
+import AbsoluteBox from "@helpers/3DElements/AbsoluteBox";
+import { CAMERA_INITIAL_POSITION, SceneWithControlsProvider, useSceneWithControlsContext } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
+import DebugHelper from "@helpers/3DElements/Debug/DebugHelper";
 
 interface Props {
     children?: React.ReactNode[] | React.ReactNode;
@@ -58,6 +59,7 @@ function InternalComponent({ children }: Props) {
                                 <AxesHelper length={1000} />
                             </group>
                             <group renderOrder={0}>
+                                <DebugHelper />
                                 {ctx.sceneLoaded && children}
                             </group>
                         </group>

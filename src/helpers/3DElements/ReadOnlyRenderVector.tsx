@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import BaseRenderVector from "./BaseRenderVector";
 import { getRandomColorHex } from "@helpers/RNGUtils";
+import BaseRenderVector from "@helpers/3DElements/BaseObjects/BaseRenderVector";
 
 interface Props {
     name: string,

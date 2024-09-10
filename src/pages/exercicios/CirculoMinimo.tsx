@@ -1,10 +1,6 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
-import DefaultSceneWithoutLightning from "@helpers/DefaultSceneWithoutLightning";
-import { EsferaMinima } from "@helpers/EsferaMinima";
-import ReadOnlyRenderVector from "@helpers/ReadOnlyRenderVector";
-import RenderVector from "@helpers/RenderVector";
-import RNGRenderPointCloud from "@helpers/RNGRenderPointCloud";
-import { useSceneWithControlsContext } from "@helpers/SceneWithControlsContext";
+import EsferaMinima from "@helpers/3DElements/EsferaMinima";
+import DefaultSceneWithoutLightning from "@helpers/3DElements/Scenes/DefaultSceneWithoutLightning";
 import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";

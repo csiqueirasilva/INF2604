@@ -1,11 +1,11 @@
 import DisciplineCard from "@components/DisciplineCard";
 import MyLink from "@components/MyLink";
-import MyText from "@components/MyText";
 import GrandezasEscalarVetor from "@pages/conceitos-basicos/GrandezasEscalarVetor";
 import GrandezasProdutoVetorial from "@pages/conceitos-basicos/GrandezasProdutoVetorial";
 import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores";
 import GrandezasSubtracaoDeVetores from "@pages/conceitos-basicos/GrandezasSubtracaoDeVetores";
 import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
+import FechoConvexoScreen from "@pages/exercicios/FechoConvexoScreen";
 import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
 import { Divider, Paragraph, Title } from "react-native-paper";
@@ -63,6 +63,11 @@ const routesHelper: RouteSection[] = [{
             component: CirculoMinimo,
             title: 'Círculo mínimo',
             url: '/exercicios/circulo-minimo'
+        },
+        {
+            component: FechoConvexoScreen,
+            title: 'Fecho convexo',
+            url: '/exercicios/fecho-convexo'
         }
     ]
 }]

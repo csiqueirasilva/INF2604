@@ -1,9 +1,8 @@
-import { Point3 } from "@geometry/affine";
 import { createCircleTexture } from "@helpers/canvas";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { CanvasTexture, ColorRepresentation, SpriteMaterial, Vector3 } from "three";
 import { Html } from "@react-three/drei"; // For displaying the tooltip
-import RenderPoint, { PointProps } from "@helpers/RenderPoint";
+import RenderPoint, { PointProps } from "@helpers/3DElements/RenderPoint";
 
 interface RenderPointCloudProps {
     points: PointProps[];

@@ -1,8 +1,7 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
-import DefaultSceneWithoutLightning from "@helpers/DefaultSceneWithoutLightning";
-import ReadOnlyRenderVector from "@helpers/ReadOnlyRenderVector";
-import RenderVector from "@helpers/RenderVector";
-import { useSceneWithControlsContext } from "@helpers/SceneWithControlsContext";
+import ReadOnlyRenderVector from "@helpers/3DElements/ReadOnlyRenderVector";
+import RenderVector from "@helpers/3DElements/RenderVector";
+import DefaultSceneWithoutLightning from "@helpers/3DElements/Scenes/DefaultSceneWithoutLightning";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
 import React, { useEffect, useState } from "react";

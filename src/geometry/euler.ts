@@ -5,9 +5,11 @@ import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
 
 export function normalizeVector(v: Vector3): Vector3 {
-    errorIfZeroLength(v);
     const length = vectorLength(v);
-    const ret = scaleVector(v, 1 / length);
+    let ret = new Vector3(0, 0, 0);
+    if(length !== 0) {
+        ret = scaleVector(v, 1 / length);
+    }
     return ret;
 }
 
@@ -136,6 +138,12 @@ export function findOrthonormalBase(n: Vector3): Base3 {
         u, v, w
     };
     return ret;
+}
+
+export function calculatePlaneNormal(p1: Point3, p2: Point3, p3: Point3): Vector3 {
+    const v1 = p2.sub(p1);
+    const v2 = p3.sub(p1);
+    return normalizeVector(crossProduct(v1, v2));
 }
 
 export function errorIfPointsColinear3(p1: Point3, p2: Point3, p3: Point3): void {

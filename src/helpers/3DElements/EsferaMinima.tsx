@@ -1,12 +1,9 @@
 import { calcCircumcircle, calcCircumsphere, calcDiameter, minSphere } from "@geometry/minsphere";
 import { Point3 } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, boundingSphereInCloud, findClosestPoints, findExtremePoints, findFarthestPoints, PolarReference } from "@geometry/topology";
-import HighlightSprite from "@helpers/HighlightSprite";
-import RenderPoint from "@helpers/RenderPoint";
-import RenderVector from "@helpers/RenderVector";
-import RNGRenderPointCloud, { RenderPointCloudProps } from "@helpers/RNGRenderPointCloud";
-import { useSceneWithControlsContext } from "@helpers/SceneWithControlsContext";
-import SegmentedLine from "@helpers/SegmentedLine";
+import RenderPoint from "@helpers/3DElements/RenderPoint";
+import RNGRenderPointCloud, { RenderPointCloudProps } from "@helpers/3DElements/RNGRenderPointCloud";
+import { useSceneWithControlsContext } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
 import { Line, Sphere } from "@react-three/drei";
 import { button, folder, useControls } from "leva";
 import { useEffect, useState } from "react";
@@ -104,7 +101,7 @@ function InternalComponent({ points } : { points : Point3[] }) {
 interface Props extends RenderPointCloudProps {
 }
 
-export function EsferaMinima(props : Props) {
+export default function EsferaMinima(props : Props) {
     return (
         <RNGRenderPointCloud { ...props }>
             {

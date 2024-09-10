@@ -1,11 +1,5 @@
 import { generateRNGPointCloudBasedOnStrategy, Point3, PointGenerationType } from "@geometry/points";
 import { PolarReference } from "@geometry/topology";
-import BaseRenderPointCloud from "@helpers/BaseRenderPointCloud";
-import InstancedRenderedPoint from "@helpers/InstancedRenderedPoint";
-import RenderPoint from "@helpers/RenderPoint";
-import RenderVector from "@helpers/RenderVector";
-import { getRandomColorHex } from "@helpers/RNGUtils";
-import { useSceneWithControlsContext, VIEW_TYPE } from "@helpers/SceneWithControlsContext";
 import { useValidColorHex } from "@helpers/useValidColorHex";
 import { Line, Sphere } from "@react-three/drei";
 import { button, folder, useControls } from "leva";
@@ -13,6 +7,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Color, ColorRepresentation } from "three";
 import * as Clipboard from 'expo-clipboard';
 import { exportPoints, importPoints, MAX_DATA_EXPORT } from "@helpers/export";
+import InstancedRenderedPoint from "@helpers/3DElements/InstancedRenderedPoint";
+import { useSceneWithControlsContext, VIEW_TYPE } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
+import { getRandomColorHex } from "@helpers/RNGUtils";
 
 export interface RenderPointCloudProps {
     name: string;
@@ -87,6 +84,11 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
                         alert(`Só é possível importar até ${MAX_DATA_EXPORT}`);
                     }
                 }
+            }),
+            'Console log points': button(async () => {
+                let str = ``;
+                points.forEach(p => str += p.toString() + '\n');
+                console.log(str)
             })
         })
         return ret;

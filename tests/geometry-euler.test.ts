@@ -1,6 +1,7 @@
 import { crossProduct, distanceBetweenPoints, dotProduct, vectorLength } from '@geometry/affine';
-import { angleBetweenVectors, angleBetweenVectorsCross, baricentricCoordsAtVectorField, checkIfVectorsOrthogonal, errorIfPointsColinear3, fastAnglePqr, fastCalcAreaTriangle2d, fastCalcAreaTriangle3d, findOrthonormalBase, findPerpendicularComponent, normalizeVector, projectVector, pseudoAngleAsSquarePerimeter, pseudoAngleBetweenVectors } from '@geometry/euler';
+import { angleBetweenVectors, angleBetweenVectorsCross, baricentricCoordsAtVectorField, calculatePlaneNormal, checkIfVectorsOrthogonal, errorIfPointsColinear3, fastAnglePqr, fastCalcAreaTriangle2d, fastCalcAreaTriangle3d, findOrthonormalBase, findPerpendicularComponent, normalizeVector, projectVector, pseudoAngleAsSquarePerimeter, pseudoAngleBetweenVectors } from '@geometry/euler';
 import { Point3 } from '@geometry/points';
+import { applyRotationMatrix, calculateRotationMatrix, rotatePointsReverseRotation } from '@geometry/topology';
 import { Vector2, Vector3 } from 'three';
 
 describe('Euler utility tests', () => {
@@ -200,4 +201,159 @@ describe('Euler utility tests', () => {
         // Further assertions can be made depending on the expected values.
     });
 
+});
+
+describe('calculatePlaneNormal', () => {
+
+    test('should calculate the correct normal for three non-collinear points', () => {
+        const p1 = new Point3(0, 0, 0);
+        const p2 = new Point3(1, 0, 0);
+        const p3 = new Point3(0, 1, 0);
+
+        const result = calculatePlaneNormal(p1, p2, p3);
+
+        const expectedNormal = new Vector3(0, 0, 1);  // Normal pointing upwards along the z-axis
+        expect(result.x).toBeCloseTo(expectedNormal.x, 4);
+        expect(result.y).toBeCloseTo(expectedNormal.y, 4);
+        expect(result.z).toBeCloseTo(expectedNormal.z, 4);
+    });
+
+    test('should return a zero vector for collinear points', () => {
+        const p1 = new Point3(0, 0, 0);
+        const p2 = new Point3(1, 0, 0);
+        const p3 = new Point3(2, 0, 0);  // Collinear points along x-axis
+
+        const result = calculatePlaneNormal(p1, p2, p3);
+
+        // Expecting the normal to be zero vector for collinear points
+        expect(result.x).toBeCloseTo(0, 4);
+        expect(result.y).toBeCloseTo(0, 4);
+        expect(result.z).toBeCloseTo(0, 4);
+    });
+
+    test('should return a normalized vector', () => {
+        const p1 = new Point3(1, 1, 1);
+        const p2 = new Point3(2, 3, 1);
+        const p3 = new Point3(3, 1, 4);
+
+        const result = calculatePlaneNormal(p1, p2, p3);
+
+        // Check if the vector is normalized (its magnitude should be close to 1)
+        const magnitude = Math.sqrt(result.x ** 2 + result.y ** 2 + result.z ** 2);
+        expect(magnitude).toBeCloseTo(1, 4);
+    });
+
+    test('should calculate a correct perpendicular normal vector', () => {
+        const p1 = new Point3(1, 0, 0);
+        const p2 = new Point3(0, 1, 0);
+        const p3 = new Point3(0, 0, 1);
+
+        const result = calculatePlaneNormal(p1, p2, p3);
+
+        // Expected normal should be perpendicular to all given vectors
+        // In this case, we expect a normal that is a vector along the diagonal
+        const expectedNormal = new Vector3(1, 1, 1).normalize();  // normalize ensures it's unit vector
+
+        expect(result.x).toBeCloseTo(expectedNormal.x, 4);
+        expect(result.y).toBeCloseTo(expectedNormal.y, 4);
+        expect(result.z).toBeCloseTo(expectedNormal.z, 4);
+    });
+});
+
+describe('calculateRotationMatrix', () => {
+
+    test('should return the identity matrix when normal is already aligned with the z-axis', () => {
+        const normal = new Vector3(0, 0, 1);
+        const rotationMatrix = calculateRotationMatrix(normal);
+
+        const expectedIdentityMatrix = [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+        ];
+
+        expect(rotationMatrix).toEqual(expectedIdentityMatrix);
+    });
+
+    test('should calculate correct rotation matrix to align with the z-axis', () => {
+        const normal = new Vector3(1, 0, 0);  // Normal along the x-axis
+        const rotationMatrix = calculateRotationMatrix(normal);
+
+        // Rotate the normal vector using the rotation matrix
+        const rotatedVector = applyRotationMatrix(normal, rotationMatrix);
+
+        // Expected vector should now be aligned with the z-axis (0, 0, 1)
+        expect(rotatedVector.x).toBeCloseTo(0, 4);
+        expect(rotatedVector.y).toBeCloseTo(0, 4);
+        expect(rotatedVector.z).toBeCloseTo(1, 4);
+    });
+
+    test('should calculate correct rotation matrix to align with a custom axis', () => {
+        const normal = new Vector3(1, 1, 0);  // Some arbitrary normal
+        const customAxis = new Vector3(1, 0, 0);  // Custom input axis along x-axis
+        const rotationMatrix = calculateRotationMatrix(normal, customAxis);
+
+        const rotatedVector = applyRotationMatrix(normal, rotationMatrix);
+
+        expect(rotatedVector.x).toBeCloseTo(Math.sqrt(2), 4);
+        expect(rotatedVector.y).toBeCloseTo(0, 4);
+        expect(rotatedVector.z).toBeCloseTo(0, 4);
+    });
+
+    test('should handle vectors with small differences', () => {
+        const normal = new Vector3(0.000001, 0, 1);  // Slightly off from the z-axis
+        const rotationMatrix = calculateRotationMatrix(normal);
+
+        // Rotate the normal vector using the rotation matrix
+        const rotatedVector = applyRotationMatrix(normal, rotationMatrix);
+
+        // Expected vector should now be aligned with the z-axis (0, 0, 1)
+        expect(rotatedVector.x).toBeCloseTo(0, 6);
+        expect(rotatedVector.y).toBeCloseTo(0, 6);
+        expect(rotatedVector.z).toBeCloseTo(1, 6);
+    });
+});
+
+describe('rotatePointsReverseRotation', () => {
+
+    test('should rotate points using the inverse of the rotation matrix', () => {
+        const points = [
+            new Point3(1, 0, 0),
+            new Point3(0, 1, 0)
+        ];
+    
+        // Example rotation matrix (90 degrees around z-axis)
+        const rotationMatrix = [
+            [0, -1, 0],
+            [1, 0, 0],
+            [0, 0, 1]
+        ];
+    
+        const rotatedPoints = rotatePointsReverseRotation(points, rotationMatrix);
+    
+        // After reversing the rotation, the points should match these values
+        expect(rotatedPoints[0].x).toBeCloseTo(0, 4);
+        expect(rotatedPoints[0].y).toBeCloseTo(-1, 4);
+        expect(rotatedPoints[0].z).toBeCloseTo(0, 4);
+    
+        expect(rotatedPoints[1].x).toBeCloseTo(1, 4);
+        expect(rotatedPoints[1].y).toBeCloseTo(0, 4);
+        expect(rotatedPoints[1].z).toBeCloseTo(0, 4);
+    });   
+
+    test('should handle a non-invertible matrix by throwing an error', () => {
+        const points = [
+            new Point3(1, 0, 0),
+            new Point3(0, 1, 0)
+        ];
+
+        // A matrix with a determinant of 0 (non-invertible)
+        const nonInvertibleMatrix = [
+            [1, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0]
+        ];
+
+        expect(() => rotatePointsReverseRotation(points, nonInvertibleMatrix)).toThrow('Matrix is non-invertible');
+    });
 });
