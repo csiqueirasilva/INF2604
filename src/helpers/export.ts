@@ -50,7 +50,7 @@ export function importPointsFromText(text : string): Point3[] {
         let y = parseFloat(s[1]) || 0;
         let z = parseFloat(s[2]) || 0;
         if(isNaN(x) || isNaN(y) || isNaN(z)) {
-            throw `Erro ao fazer parse do ponto ${idx + 1}: (${c})`
+            throw `Erro ao fazer parse do ponto ${idx + 1}: (${c}); ${x} ; ${y} ; ${z}`
         }
         return new Point3(x, y, z);
     });
