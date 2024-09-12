@@ -43,8 +43,6 @@ export function createDebugLine(
     const material = new THREE.LineDashedMaterial({ 
         vertexColors: true, 
         linewidth: lineWidth, 
-        depthTest: false, 
-        depthWrite: false,
         dashSize: gapSize,
         gapSize: gapSize
     });

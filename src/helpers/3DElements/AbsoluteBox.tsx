@@ -12,7 +12,7 @@ interface Props {
     width?: number;
 }
 
-function AbsoluteBox ({ zIndex = 2000, ...props } : Props) {
+function AbsoluteBox ({ zIndex = 50, ...props } : Props) {
     return (
         <Html>
             {
