@@ -1,6 +1,8 @@
+import { Card } from '@components/ui/card';
+import { Separator } from '@components/ui/separator';
+import { H1, H2, H3, P } from '@components/ui/typography';
 import React, { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
-import { Card, Title, Paragraph, Divider } from 'react-native-paper';
 
 interface DisciplineCardProps {
   title: string;
@@ -12,12 +14,11 @@ const DisciplineCard: React.FC<DisciplineCardProps> = ({ title, description, chi
   return (
     <ScrollView className={`p-4`}>
       <Card className={`my-4 p-4 rounded-lg bg-gray-100 shadow-lg`}>
-        <Card.Content>
-          <Title className={`text-lg font-bold text-purple-700`}>{title}</Title>
-          <Paragraph className={`text-base text-gray-700 mb-1`}>{description}</Paragraph>
-          <Divider className={`my-2 bg-purple-700`} />
-          {children}
-        </Card.Content>
+        <H3>{title}</H3>
+        <Separator className={`my-2`} />
+        <P className={`!my-1`}>{description}</P>
+        <Separator className={`my-2`} />
+        {children}
       </Card>
     </ScrollView>
   );

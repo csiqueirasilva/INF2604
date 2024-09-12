@@ -1,5 +1,9 @@
 import DisciplineCard from "@components/DisciplineCard";
 import MyLink from "@components/MyLink";
+import { Button } from "@components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from "@components/ui/dialog";
+import { Separator } from "@components/ui/separator";
+import { H3, List, P } from "@components/ui/typography";
 import GrandezasEscalarVetor from "@pages/conceitos-basicos/GrandezasEscalarVetor";
 import GrandezasProdutoVetorial from "@pages/conceitos-basicos/GrandezasProdutoVetorial";
 import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores";
@@ -8,7 +12,6 @@ import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
 import FechoConvexoScreen from "@pages/exercicios/FechoConvexoScreen";
 import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
-import { Divider, Paragraph, Title } from "react-native-paper";
 
 interface RouteEntry {
     url: string
@@ -83,13 +86,13 @@ export default function HomeScreen() {
             {
                 routesHelper.map(section => (
                     <div key={section.title}>
-                        <Title className={`text-base text-gray-700 mb-1`}>{section.title}</Title>
+                        <H3 className={`text-base text-gray-700 mb-4`}>{section.title}</H3>
                         {section.entries.map(entry => (
-                            <Paragraph key={entry.url} className="my-1 block">
+                            <List key={entry.url} className="my-1 block">
                                 <MyLink href={entry.url}>{entry.title}</MyLink>
-                            </Paragraph>
+                            </List>
                         ))}
-                        <Divider className={`my-2 bg-purple-700`} />
+                        <Separator className="my-4" />
                     </div>
                 ))
             }

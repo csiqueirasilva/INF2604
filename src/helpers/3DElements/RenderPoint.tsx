@@ -3,6 +3,9 @@ import * as THREE from "three";
 import React, { useEffect, useRef, useState } from "react";
 import { createCircleTexture } from "@helpers/canvas";
 import { Html } from "@react-three/drei";
+import { createPortal } from "react-dom";
+import { Dialog, DialogContent, DialogOverlay, DialogPortal, DialogTrigger } from "@components/ui/dialog";
+import { Button } from "@components/ui/button";
 
 export interface PointProps {
     name?: string;

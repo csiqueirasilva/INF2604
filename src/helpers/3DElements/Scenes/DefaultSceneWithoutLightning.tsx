@@ -59,8 +59,9 @@ function InternalComponent({ children }: Props) {
                                 <AxesHelper length={1000} />
                             </group>
                             <group renderOrder={0}>
-                                <DebugHelper />
-                                {ctx.sceneLoaded && children}
+                                <DebugHelper>
+                                    {ctx.sceneLoaded && children}
+                                </DebugHelper>
                             </group>
                         </group>
                         <OrbitControls ref={ctx.orbitControlsRef} />

@@ -340,10 +340,17 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
     ClearDebugObject(name);
 
     if(arePointsCoplanar(points)) {
-        // quickhull 2d
-        const [ rotatedPoints, rotationMatrix ] = rotatePointsToZPlane(points);
-        const hulledPoints = quickHull2d(name, rotatedPoints);
-        ret = rotatePointsReverseRotation(hulledPoints, rotationMatrix);
+        if(points.length >= 3) {
+            // quickhull 2d
+            const [ rotatedPoints, rotationMatrix ] = rotatePointsToZPlane(points);
+            const hulledPoints = quickHull2d(name, rotatedPoints);
+            hulledPoints.push(hulledPoints[0]); // close loop
+            PushDebugObjects(
+                name, 
+                createDebugLine(hulledPoints)
+            );
+            ret = rotatePointsReverseRotation(hulledPoints, rotationMatrix);
+        }
     } else {
         // quickhull 3d
         ret = quickHull3d(points);

@@ -1,15 +1,19 @@
 import { generateRNGPointCloudBasedOnStrategy, Point3, PointGenerationType } from "@geometry/points";
 import { PolarReference } from "@geometry/topology";
 import { useValidColorHex } from "@helpers/useValidColorHex";
-import { Line, Sphere } from "@react-three/drei";
+import { Html, Line, Sphere } from "@react-three/drei";
 import { button, folder, useControls } from "leva";
 import React, { useCallback, useEffect, useState } from "react";
 import { Color, ColorRepresentation } from "three";
 import * as Clipboard from 'expo-clipboard';
-import { exportPoints, importPoints, MAX_DATA_EXPORT } from "@helpers/export";
+import { exportPoints, exportPointsAsText, importPoints, importPointsFromText, MAX_DATA_EXPORT } from "@helpers/export";
 import InstancedRenderedPoint from "@helpers/3DElements/InstancedRenderedPoint";
 import { useSceneWithControlsContext, VIEW_TYPE } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
 import { getRandomColorHex } from "@helpers/RNGUtils";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogOverlay } from "@components/ui/dialog";
+import { Textarea } from "@components/ui/textarea";
+import { Button } from "@components/ui/button";
+import { DialogTitle } from "@radix-ui/react-dialog";
 
 export interface RenderPointCloudProps {
     name: string;
@@ -50,6 +54,8 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
     const startColor = useValidColorHex(color);
 
     const ctx = useSceneWithControlsContext();
+    const [ importDialogOpen, setImportDialogOpen ] = useState(false);
+    const [ pointsAsText, setPointsAsText ] = useState("");
 
     const [usedColor, setUsedColor] = useState<string>(startColor);
     const [points, setPoints] = useState<Point3[]>([]);
@@ -85,9 +91,13 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
                 }
             }),
             'Console log points': button(async () => {
-                let str = ``;
-                points.forEach(p => str += p.toString() + '\n');
+                const str = exportPointsAsText(points);
                 console.log(str)
+            }),
+            'Import/Export pontos': button(async () => {
+                const str = exportPointsAsText(points);
+                setPointsAsText(str);
+                setImportDialogOpen(true);
             })
         })
         return ret;
@@ -114,6 +124,24 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
                 children instanceof Function && children(points)
             }
             <InstancedRenderedPoint points={points.map(x => x.toVector3())} color={values['Cor'] || 'black'} size={size} />
+            <Html position={[0, 0, 0]}>
+                <Dialog open={importDialogOpen}>
+                    <DialogOverlay />
+                    <DialogContent closeCb={() => setImportDialogOpen(false)} aria-describedby="Import/Export pontos">
+                        <DialogTitle>Import/Export pontos</DialogTitle>
+                        <Textarea className={"min-h-[600px]"} defaultValue={pointsAsText} onChange={(ev) => setPointsAsText(ev.target.value)} />
+                        <Button onClick={() => {
+                            try {
+                                let points = importPointsFromText(pointsAsText);
+                                setPoints(points);
+                                setImportDialogOpen(false);
+                            } catch (e) {
+                                alert(e);
+                            }
+                        }}>Update</Button>
+                    </DialogContent>
+                </Dialog>
+            </Html>
         </>
     );
 };

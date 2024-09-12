@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
+import { Dialog, DialogContent, DialogOverlay, DialogTrigger } from "@components/ui/dialog";
+import { Button } from "@components/ui/button";
 
 export interface InstancedRenderedPointProps {
     points: THREE.Vector3[];

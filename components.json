@@ -1,0 +1,18 @@
+{
+    "style": "new-york",
+    "tailwind": {
+        "config": "tailwind.config.js",
+        "css": "global.css",
+        "baseColor": "gray",
+        "cssVariables": true
+    },
+    "rsc": false,
+    "tsx": true,
+    "aliases": {
+        "utils": "@helpers/utils",
+        "components": "@components",
+        "ui": "@components/ui",
+        "lib": "@helpers",
+        "hooks": "@helpers/hooks"
+    }
+}

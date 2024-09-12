@@ -34,3 +34,25 @@ export async function importPoints(base64: string): Promise<Point3[]> {
     const parsed = JSON.parse(raw) as { x: number, y: number, z: number }[];
     return parsed.map((p) => new Point3(p.x, p.y, p.z));
 }
+
+export function exportPointsAsText(points : Point3[]): string {
+    let str = "";
+    points.forEach(p => str += p.toString() + '\n');
+    return str;
+}
+
+export function importPointsFromText(text : string): Point3[] {
+    let ret : Point3[] = [];
+    let chunks = text.trim().split('\n');
+    ret = chunks.map((c, idx) => {
+        let s = c.replaceAll(/[^0-9,-.]/ig, '').split(',');
+        let x = parseFloat(s[0]);
+        let y = parseFloat(s[1]);
+        let z = parseFloat(s[2]);
+        if(isNaN(x) || isNaN(y) || isNaN(z)) {
+            throw `Erro ao fazer parse do ponto ${idx + 1}: (${c})`
+        }
+        return new Point3(x, y, z);
+    });
+    return ret;
+}

@@ -1,6 +1,7 @@
 import { calcCircumcircle, calcCircumsphere, calcDiameter, minSphere } from "@geometry/minsphere";
 import { Point3 } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, boundingSphereInCloud, findClosestPoints, findExtremePoints, findFarthestPoints, PolarReference, quickHull } from "@geometry/topology";
+import { useDebugHelper } from "@helpers/3DElements/Debug/DebugHelper";
 import RNGRenderPointCloud, { RenderPointCloudProps } from "@helpers/3DElements/RNGRenderPointCloud";
 import { useSceneWithControlsContext } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
 import { createSolidFromPoints } from "@helpers/ThreeUtils";
@@ -16,6 +17,7 @@ function InternalComponent({ points } : { points : Point3[] }) {
     const [ coplanar, setCoplanar ] = useState(false);
 
     const ctx = useSceneWithControlsContext();
+    const debugHelper = useDebugHelper();
 
     useEffect(() => {
         try {
@@ -49,11 +51,13 @@ function InternalComponent({ points } : { points : Point3[] }) {
             {
                 hullPoints.length >= 2 && 
                 (
-                    coplanar ?
-                    <Line 
-                        points={renderPoints.concat([ hullPoints[0].toVector3() ])} 
-                        lineWidth={2} 
-                        vertexColors={colors} /> :
+                    coplanar ? (
+                        !debugHelper.controlValues["QuickHull-debugVisible"] &&
+                        <Line 
+                            points={renderPoints} 
+                            lineWidth={2} 
+                            vertexColors={colors} /> 
+                    ) :
                     <mesh geometry={new ConvexGeometry(renderPoints)}>
                         <meshBasicMaterial color={0x00ff00} opacity={0.5} transparent side={BackSide} />
                     </mesh>

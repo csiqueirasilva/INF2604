@@ -1,5 +1,5 @@
 import { folder, useControls } from "leva";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Object3D, Vector3 } from "three";
 import { ThreeElements, useThree } from "@react-three/fiber"
 import { Html } from "@react-three/drei";
@@ -9,22 +9,32 @@ export interface DebugHelperObject {
     id: string
 }
 
+interface Props {
+    children: React.ReactNode[]|React.ReactNode|undefined
+}
+
 let moduleSetter: React.Dispatch<React.SetStateAction<DebugHelperObject[]>> | undefined = undefined;
 
-export default function DebugHelper() {
+export interface IDebugHelperContext {
+    controlValues : any,
+}
+
+const DebugHelperContext = createContext<IDebugHelperContext | undefined>(undefined);
+
+export default function DebugHelper(props : Props) {
     const [debugObjects, setDebugObjects] = useState<DebugHelperObject[]>([]);
-    const [values, setControls] = useControls("Debug", () => {
+    const [ values, setControls ] = useControls("Debug", () => {
         const ret: any = {};
         debugObjects.map((obj) => {
             const name = obj.id;
             const fold = {} as any;
             fold[`${name}-debugSteps`] = { min: 0, max: obj.objects.length, value: 0, step: 1 };
             fold[`${name}-debugVisible`] = { value: true };
-            fold[`${name}-showName`] = { value: true };
+            fold[`${name}-showName`] = { value: false };
             ret[name] = folder(fold)
         })
         return ret;
-    }, [debugObjects]);
+    }, [ debugObjects ]);
 
     useEffect(() => {
         if (setDebugObjects instanceof Function) {
@@ -37,7 +47,7 @@ export default function DebugHelper() {
             const key = `${el.id}-debugSteps`;
             setControls({ [key]: Math.max(values[key], el.objects.length) });
         })
-    }, [debugObjects]);
+    }, [ debugObjects ]);
 
     useEffect(() => {
         return () => {
@@ -46,7 +56,7 @@ export default function DebugHelper() {
     }, []);
 
     return (
-        <>
+        <DebugHelperContext.Provider value={{ controlValues: values }}>
             {
                 debugObjects.map(
                     (debug, idx) =>
@@ -65,7 +75,8 @@ export default function DebugHelper() {
                         </React.Fragment>
                 )
             }
-        </>
+            { props.children }
+        </DebugHelperContext.Provider>
     );
 }
 
@@ -106,3 +117,11 @@ export function ClearDebugObject(id : string) {
         });
     }
 }
+
+export const useDebugHelper = () => {
+    const context = useContext(DebugHelperContext);
+    if (context === undefined) {
+        throw new Error('useDebugContext must be used within a DebugHelper');
+    }
+    return context;
+};
