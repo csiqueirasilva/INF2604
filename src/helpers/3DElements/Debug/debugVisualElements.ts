@@ -6,7 +6,7 @@ export function createDebugLine(
     points: (THREE.Vector3|Point3)[], 
     startColorInput : THREE.ColorRepresentation = 0x000000,
     endColorInput : THREE.ColorRepresentation = 0x0000ff,
-    lineWidth: number = 4,
+    lineWidth: number = 10,
     gapSize: number = 0,
     ): THREE.Line {
 
