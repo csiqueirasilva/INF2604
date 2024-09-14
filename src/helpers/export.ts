@@ -56,3 +56,9 @@ export function importPointsFromText(text : string): Point3[] {
     });
     return ret;
 }
+
+export function importPointsFromMatrix(mat : number[][]) : Point3[] {
+    let ret : Point3[] = []
+    ret = mat.map(p => new Point3(p[0] || 0, p[1] || 0, p[2] || 0))
+    return ret;
+}
