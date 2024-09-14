@@ -117,6 +117,11 @@ export default function DebugHelper(props: Props) {
     );
 }
 
+export function EmptyDebugObject(id: string) {
+    const object = new Object3D();
+    PushDebugObject(id, object);
+}
+
 export function PushDebugObjects(id: string, ...objects: Object3D[]) {
     const object = new Object3D();
     object.add(...objects);

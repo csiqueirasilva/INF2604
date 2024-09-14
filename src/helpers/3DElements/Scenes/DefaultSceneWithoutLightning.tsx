@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Box, Html, isWebGL2Available, Loader, OrbitControls, useProgress } from '@react-three/drei'
+import { Box, Html, isWebGL2Available, Loader, OrbitControls, OrthographicCamera, useProgress } from '@react-three/drei'
 import { Leva, useControls } from "leva";
 import { Platform, useWindowDimensions, View } from "react-native";
 import { HEADER_HEIGHT } from "@components/HeaderWithBackButton";
@@ -85,8 +85,15 @@ function InternalComponent({ children }: Props) {
 export default function DefaultSceneWithoutLightning(props: Props) {
 
     return (
-        <Canvas gl={{ logarithmicDepthBuffer: true }} camera={{ fov: 50, position: CAMERA_INITIAL_POSITION }}>
+        <Canvas gl={{ logarithmicDepthBuffer: true }}>
             <SceneWithControlsProvider>
+                <OrthographicCamera
+                        makeDefault
+                        position={CAMERA_INITIAL_POSITION}
+                        zoom={50}
+                        near={-1000}
+                        far={1000}
+                    />
                 <InternalComponent {...props} />
             </SceneWithControlsProvider>
         </Canvas>

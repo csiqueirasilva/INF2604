@@ -2,7 +2,7 @@ import { addVectors, crossProduct, distanceBetweenPoints, orientation2D, Orienta
 import { calculatePlaneNormal, normalizeVector } from "@geometry/euler";
 import { invertMatrix3x3 } from "@geometry/math";
 import { Point3 } from "@geometry/points";
-import { ClearDebugObject, ClearDebugObjects, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
+import { ClearDebugObject, ClearDebugObjects, EmptyDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
 import { createDebugLine, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { BufferGeometry, Vector3 } from "three";
 import { ConvexHull3D, Face } from "@geometry/quickhull3d";
@@ -93,7 +93,10 @@ export interface PolarReference {
     radius: number
 }
 
-export function boundingSphereInCloud(points: Point3[]): PolarReference {
+export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere"): PolarReference {
+    
+    ClearDebugObject(name);
+
     if (points.length === 0) {
         throw new Error("Point cloud is empty.");
     }
@@ -113,13 +116,18 @@ export function boundingSphereInCloud(points: Point3[]): PolarReference {
     let center = new Point3(avgX, avgY, avgZ);
 
     let maxDistance = -Infinity;
-    let furthestPoint: Point3 = points[0];
+    let farthestPoint: Point3 = points[0];
+
+    PushDebugObjects(name, 
+        createDebugLine([ center, farthestPoint ], "black"),
+        createDebugText("Média dos pontos até mais distante", center.medianPointTo(farthestPoint).toVector3())
+    );
 
     for (const point of points) {
         const distance = distanceBetweenPoints(center, point);
         if (distance > maxDistance) {
             maxDistance = distance;
-            furthestPoint = point;
+            farthestPoint = point;
         }
     }
 
@@ -136,6 +144,8 @@ export function boundingSphereInCloud(points: Point3[]): PolarReference {
             radius += excessDistance / 2;
         }
     }
+
+    //EmptyDebugObject(name);
 
     return {
         origin: center,

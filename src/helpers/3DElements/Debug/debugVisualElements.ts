@@ -56,7 +56,7 @@ export function createDebugLine(
 export function createDebugText(
     text: string, 
     position: THREE.Vector3 = new THREE.Vector3(0, 0, 0), 
-    fontSize: number = 18, 
+    fontSize: number = 14, 
     textColor: string = '#000', 
     backgroundColor: string = 'transparent', 
     padding: number = 10
@@ -85,6 +85,14 @@ export function createDebugText(
             const canvasHeight = fontSize + (padding * 2);
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
+
+            // **Reapply context settings after resizing the canvas**
+            context.font = `${fontSize}px Arial`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+
+            // Optional: Improve text rendering quality
+            context.imageSmoothingEnabled = true;
 
             // Set background color (if needed)
             if (backgroundColor !== 'transparent') {
