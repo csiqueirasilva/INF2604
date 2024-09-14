@@ -1,5 +1,5 @@
 import { Button } from "@components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogTitle } from "@components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogOverlay, DialogTitle } from "@components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Textarea } from "@components/ui/textarea";
 import { Point3 } from "@geometry/points";
@@ -31,7 +31,10 @@ export default function ImportExportPointCloudDialog(props : Props) {
         <Dialog open={props.importDialogOpen}>
             <DialogOverlay />
             <DialogContent closeCb={() => props.setImportDialogOpen(false)}>
-                <DialogDescription>Import/Export pontos</DialogDescription>
+                <DialogHeader>
+                    <DialogTitle>Import/Export pontos</DialogTitle>
+                    <DialogDescription>Pontos no formato (x,y,z); um em cada linha</DialogDescription>
+                </DialogHeader>
                 <Select value={''} onValueChange={(value) => {
                     const cloud = SAMPLE_POINT_CLOUDS.find(x => x.name === value);
                     if(cloud) {
