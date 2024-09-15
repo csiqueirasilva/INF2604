@@ -3,7 +3,7 @@ import { errorIfPointsColinear3, errorIfPointsColinear4 } from "@geometry/euler"
 import { det4x4 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, findExtremePoints, findFarthestPoints, PolarReference } from "@geometry/topology";
-import { ClearDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
+import { ClearDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
 import { createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { shuffleArray } from "@helpers/arrays";
 import * as THREE from 'three';
@@ -99,6 +99,8 @@ export function minSphere(points: Point3[], name : string = "MinSphere"): PolarR
 
     ClearDebugObject(name);
 
+    const dtStart = (new Date()).getTime();
+
     let c: PolarReference;
 
     const collinearCheck = arePointsCollinear(points);
@@ -133,9 +135,13 @@ export function minSphere(points: Point3[], name : string = "MinSphere"): PolarR
         }
     }
 
+    const dtFinish = (new Date()).getTime();
+
     if (c === null) {
         throw new Error("Não conseguiu gerar esfera mínima.");
     }
+
+    PushDebugObject(name, createDebugText(`${name}: radius ${c.radius.toFixed(2)}; ${(dtFinish - dtStart)}ms`, new THREE.Vector3(0, 6, 0)));
 
     return c;
 }

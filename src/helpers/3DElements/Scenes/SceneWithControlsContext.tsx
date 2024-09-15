@@ -54,7 +54,7 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
         if(orbitControlsRef.current) {
             orbitControlsRef.current.enabled = values['Estilo câmera'] === VIEW_TYPE.ORBIT_CONTROLS;
         }
-    }, [ values['Estilo câmera'] ]);
+    }, [ values['Estilo câmera'], camera ]);
 
     useEffect(() => {
         setupCameraInitialPosition();

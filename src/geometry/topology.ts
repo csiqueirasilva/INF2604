@@ -97,6 +97,8 @@ export interface PolarReference {
 
 export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere"): PolarReference {
     
+    const dtStart = (new Date()).getTime();
+
     ClearDebugObject(name);
 
     if (points.length === 0) {
@@ -140,7 +142,7 @@ export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere")
         const checkVector = farthestPoint.sub(point);
         const shouldAdjust = vectorLength(dist) > radius;
         
-    if(shouldAdjust) {
+        if(shouldAdjust) {
             const toBeReflected = farthestPoint.sub(center);
             const reflectionAxis = normalizeVector(checkVector);
             const reflected = reflectVector(toBeReflected, reflectionAxis);
@@ -173,7 +175,9 @@ export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere")
         }
     }
 
-    EmptyDebugObject(name);
+    const dtFinish = (new Date()).getTime();
+
+    PushDebugObject(name, createDebugText(`${name}: radius ${radius.toFixed(2)}; ${(dtFinish - dtStart)}ms`, new Vector3(0, -6, 0)));
 
     return {
         origin: center,
