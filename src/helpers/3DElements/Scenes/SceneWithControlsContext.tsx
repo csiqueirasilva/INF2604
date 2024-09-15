@@ -4,7 +4,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { Vector3 } from "three";
 import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-export const CAMERA_INITIAL_POSITION = new Vector3( 0, 0, 20 );
+export const CAMERA_INITIAL_POSITION = new Vector3( 0, 0, 40 );
 
 export enum VIEW_TYPE {
     ORBIT_CONTROLS = "Orbit controls",

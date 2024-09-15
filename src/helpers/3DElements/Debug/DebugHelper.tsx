@@ -123,9 +123,11 @@ export function EmptyDebugObject(id: string) {
 }
 
 export function PushDebugObjects(id: string, ...objects: Object3D[]) {
-    const object = new Object3D();
-    object.add(...objects);
-    PushDebugObject(id, object);
+    if(objects.length > 0) {
+        const object = new Object3D();
+        object.add(...objects);
+        PushDebugObject(id, object);
+    }
 }
 
 export function PushDebugObject(id: string, object: Object3D) {
@@ -154,7 +156,9 @@ export function ClearDebugObject(id: string) {
         moduleSetter((prev) => {
             const copy = [...prev];
             const idx = copy.findIndex(x => x.id === id);
-            copy.splice(idx, 1);
+            if(idx !== -1) {
+                copy.splice(idx, 1);
+            }
             return copy;
         });
     }

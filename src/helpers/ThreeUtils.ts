@@ -41,3 +41,5 @@ export function createSolidFromPoints(points: THREE.Vector3[]): THREE.Mesh {
 
     return solidMesh;
 }
+
+export const VECTOR3_ZERO = new THREE.Vector3(0, 0, 0);

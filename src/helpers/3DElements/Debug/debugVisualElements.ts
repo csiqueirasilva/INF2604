@@ -2,8 +2,67 @@ import { Point3 } from '@geometry/points';
 import { Platform } from 'react-native';
 import * as THREE from 'three';
 
+export function createDebugArrow(
+    startPoint: THREE.Vector3 | Point3, 
+    endPoint: THREE.Vector3 | Point3,
+    colorInput: THREE.ColorRepresentation = 0x000000,
+    headLength: number = 0.2,
+    headWidth: number = 0.1,
+    lineWidth: number = 4
+): THREE.Group {
+
+    // Convert startPoint and endPoint to THREE.Vector3 if they are Point3
+    const start = startPoint instanceof THREE.Vector3 
+        ? startPoint 
+        : new THREE.Vector3(startPoint.x, startPoint.y, startPoint.z);
+    const end = endPoint instanceof THREE.Vector3 
+        ? endPoint 
+        : new THREE.Vector3(endPoint.x, endPoint.y, endPoint.z);
+
+    // Create a direction vector from start to end
+    const direction = new THREE.Vector3().subVectors(end, start);
+    const length = direction.length();
+
+    // Normalize the direction
+    const normalizedDirection = direction.clone().normalize();
+
+    // Create the line part of the arrow
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const lineMaterial = new THREE.LineBasicMaterial({ 
+        color: colorInput, 
+        linewidth: lineWidth 
+    });
+    const line = new THREE.Line(lineGeometry, lineMaterial);
+
+    // Create the arrowhead (a cone)
+    const coneGeometry = new THREE.ConeGeometry(headWidth, headLength, 16);
+    
+    // Translate the cone geometry so that the tip is at the origin
+    coneGeometry.translate(0, -headLength / 2, 0);
+
+    const coneMaterial = new THREE.MeshBasicMaterial({ color: colorInput });
+    const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+
+    // Position the cone at the tip of the arrow
+    cone.position.copy(end);
+
+    // Orient the cone to point along the direction vector
+    const axis = new THREE.Vector3(0, 1, 0); // Cone's default orientation is along +Y axis
+    const quaternion = new THREE.Quaternion();
+    quaternion.setFromUnitVectors(axis, normalizedDirection);
+    cone.quaternion.copy(quaternion);
+
+    // Create a group to hold the line and cone
+    const arrow = new THREE.Group();
+    arrow.add(line);
+    arrow.add(cone);
+
+    return arrow;
+}
+
 export function createDebugLine(
     points: (THREE.Vector3|Point3)[], 
+    origin: THREE.Vector3|Point3 = new THREE.Vector3(0, 0, 0),
     startColorInput : THREE.ColorRepresentation = 0x000000,
     endColorInput : THREE.ColorRepresentation = 0x0000ff,
     lineWidth: number = 4,
@@ -16,7 +75,7 @@ export function createDebugLine(
         // Prepare the points as an array of Vector3
         const vertices: number[] = [];
         points.forEach((point) => {
-            vertices.push(point.x, point.y, point.z);
+            vertices.push(point.x + origin.x, point.y + origin.y, point.z + origin.z);
         });
 
         // Create a Float32Array for the vertices
@@ -51,6 +110,38 @@ export function createDebugLine(
     const line = new THREE.Line(geometry, material);
     line.computeLineDistances();
     return line;
+}
+
+export function createDebugSphere(
+    center: THREE.Vector3 | Point3,
+    radius: number,
+    color: THREE.ColorRepresentation = 0xaaaaaa,
+    opacity = 0.5
+): THREE.Mesh {
+    // Convert center to THREE.Vector3 if it's a Point3
+    const sphereCenter = center instanceof THREE.Vector3
+        ? center
+        : new THREE.Vector3(center.x, center.y, center.z);
+
+    // Create the sphere geometry
+    const geometry = new THREE.SphereGeometry(radius, 32, 32);
+
+    // Create a basic material with backside rendering only
+    const material = new THREE.MeshBasicMaterial({
+        opacity: opacity,
+        transparent: true,
+        color: color,
+        side: THREE.BackSide, // Render only the backside
+        wireframe: false,     // Set to true if you prefer a wireframe sphere
+    });
+
+    // Create the mesh
+    const sphere = new THREE.Mesh(geometry, material);
+
+    // Position the sphere at the specified center
+    sphere.position.copy(sphereCenter);
+
+    return sphere;
 }
 
 export function createDebugText(

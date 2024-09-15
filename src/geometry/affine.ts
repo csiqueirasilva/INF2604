@@ -1,8 +1,22 @@
 import { RADIAN } from "@geometry/constants";
-import { Point3 } from "@geometry/points";
+import { normalizeVector } from "@geometry/euler";
+import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
 
+// theta(1)
+export function vectorSameDirection(v1 : Vector3, v2 : Vector3) : boolean {
+    return vectorLength(crossProduct(v1, v2)) < TOLERANCE_EPSILON && dotProduct(v1, v2) >= 0;
+};
+
+// theta(1)
+export function reflectVector(vector : Vector3|Point3, extlineBetween : Vector3|Point3) {
+    let reflect = new Vector3();
+    let v = new Vector3().copy(vector);
+    let lineBetween = new Vector3(extlineBetween.x, extlineBetween.y, extlineBetween.z);
+    reflect.copy(vector).add(lineBetween.multiplyScalar(-2 * v.dot(lineBetween)));
+    return reflect;
+};
 // theta(1)
 export function scaleVector(v1 : Vector3, n : number) : Vector3 {
     let ret = v1.clone();
@@ -45,6 +59,11 @@ export function crossProduct(v1: Vector3, v2: Vector3): Vector3 {
 // theta(1)
 export function addVectors(v1 : Vector3, v2 : Vector3) : Vector3 {
     return new Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+}
+
+// theta(1)
+export function reverseVector(v1 : Vector3) : Vector3 {
+    return scaleVector(v1, -1);
 }
 
 // theta(1)
@@ -158,4 +177,34 @@ export function orientation3D(p1: Point3, p2: Point3, p3: Point3, p4: Point3): O
     }
 
     return volume > 0 ? OrientationCase.COUNTER_CLOCK_WISE : OrientationCase.CLOCK_WISE;
+}
+
+// theta(1)
+export function chordLengthAtPoint(
+    sphereCenter: Point3|Vector3,
+    sphereRadius: number,
+    point: { x: number; y: number; z: number },
+
+): number {
+    // Calculate the squared distance from sphere center to point P
+    const dx = point.x - sphereCenter.x;
+    const dy = point.y - sphereCenter.y;
+    const dz = point.z - sphereCenter.z;
+    const dSquared = dx * dx + dy * dy + dz * dz;
+
+    const radiusSquared = sphereRadius * sphereRadius;
+
+    console.log(dSquared, radiusSquared + TOLERANCE_EPSILON)
+    if (dSquared > (radiusSquared + TOLERANCE_EPSILON)) {
+        // Point is outside the sphere
+        return 0;
+    }
+
+    // Calculate r
+    const r = Math.sqrt(radiusSquared - dSquared);
+
+    // Chord length L
+    const chordLength = 2 * r;
+
+    return chordLength;
 }

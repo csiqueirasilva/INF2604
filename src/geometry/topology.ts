@@ -1,11 +1,13 @@
-import { addVectors, crossProduct, distanceBetweenPoints, orientation2D, OrientationCase, scaleVector, subVectors, vectorLength } from "@geometry/affine";
+import { addVectors, crossProduct, distanceBetweenPoints, dotProduct, orientation2D, orientation3D, OrientationCase, reflectVector, reverseVector, rotateVector, scaleVector, subVectors, vectorLength, vectorSameDirection } from "@geometry/affine";
 import { calculatePlaneNormal, normalizeVector } from "@geometry/euler";
 import { invertMatrix3x3 } from "@geometry/math";
-import { Point3 } from "@geometry/points";
+import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { ClearDebugObject, ClearDebugObjects, EmptyDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
-import { createDebugLine, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
+import { createDebugArrow, createDebugLine, createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { BufferGeometry, Vector3 } from "three";
 import { ConvexHull3D, Face } from "@geometry/quickhull3d";
+import { normalize } from "three/src/math/MathUtils";
+import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
 
 export function findClosestPoints(points: Point3[]): Point3[] {
     const n = points.length;
@@ -101,51 +103,77 @@ export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere")
         throw new Error("Point cloud is empty.");
     }
 
-    let sumX = 0, sumY = 0, sumZ = 0;
-
-    for (const point of points) {
-        sumX += point.x;
-        sumY += point.y;
-        sumZ += point.z;
-    }
-
-    const avgX = sumX / points.length;
-    const avgY = sumY / points.length;
-    const avgZ = sumZ / points.length;
-
-    let center = new Point3(avgX, avgY, avgZ);
-
     let maxDistance = -Infinity;
     let farthestPoint: Point3 = points[0];
-
-    PushDebugObjects(name, 
-        createDebugLine([ center, farthestPoint ], "black"),
-        createDebugText("Média dos pontos até mais distante", center.medianPointTo(farthestPoint).toVector3())
-    );
+    let farthestPoint2: Point3 = points[0];
 
     for (const point of points) {
-        const distance = distanceBetweenPoints(center, point);
+        const distance = distanceBetweenPoints(points[0], point);
         if (distance > maxDistance) {
             maxDistance = distance;
             farthestPoint = point;
         }
     }
 
-    let radius = maxDistance;
+    maxDistance = -Infinity;
 
     for (const point of points) {
-        const vectorToCenter = point.sub(center);
-        const distanceToPoint = vectorLength(vectorToCenter);
-        const excessDistance = distanceToPoint - radius;
-
-        if (excessDistance > 0) {
-            const adjustment = scaleVector(normalizeVector(vectorToCenter), excessDistance / 2);
-            center = Point3.fromVector3(addVectors(center.toVector3(), adjustment));
-            radius += excessDistance / 2;
+        const distance = distanceBetweenPoints(farthestPoint, point);
+        if (distance > maxDistance) {
+            maxDistance = distance;
+            farthestPoint2 = point;
         }
     }
 
-    //EmptyDebugObject(name);
+    let center = farthestPoint.medianPointTo(farthestPoint2);
+    let radius = maxDistance / 2;
+
+    PushDebugObjects(name, 
+        createDebugLine([ center, farthestPoint ], VECTOR3_ZERO, "black"),
+        createDebugLine([ center, farthestPoint2 ], VECTOR3_ZERO, "black"),
+        createDebugText("Pontos mais distantes", farthestPoint.medianPointTo(farthestPoint2).toVector3()),
+        createDebugSphere(center, radius)
+    );
+
+    for (const point of points) {
+        const dist = point.sub(center);
+        const checkVector = farthestPoint.sub(point);
+        const shouldAdjust = vectorLength(dist) > radius;
+        
+    if(shouldAdjust) {
+            const toBeReflected = farthestPoint.sub(center);
+            const reflectionAxis = normalizeVector(checkVector);
+            const reflected = reflectVector(toBeReflected, reflectionAxis);
+            const reflectedFromCenter = addVectors(center.toVector3(), reflected);
+            const adjustVector = scaleVector(point.sub(Point3.fromVector3(reflectedFromCenter)), 0.5);
+            const excessDistance = vectorLength(adjustVector);
+            const debugElements = [ 
+                createDebugArrow( center, farthestPoint, "black"),
+                createDebugArrow(farthestPoint, point, shouldAdjust ? "green" : "red"),
+                createDebugSphere(center, radius),
+                createDebugLine([ scaleVector(reflectionAxis, -0.5), scaleVector(reflectionAxis, 0.5) ], center, "purple", "PURPLE"),
+                createDebugArrow(center, reflectedFromCenter, "purple"),
+                createDebugArrow(reflectedFromCenter , point, "red"),
+                createDebugArrow(center, addVectors(center.toVector3(), adjustVector), "yellow")
+            ];
+            const oldCenter = center.toVector3();
+            const newCenter = addVectors(center.toVector3(), adjustVector);
+            radius += excessDistance;
+            center = Point3.fromVector3(newCenter);
+            // compute new center
+            const oldFar = farthestPoint.toVector3();
+            const proposedFar = point.toVector3();
+            debugElements.push(
+                createDebugLine([ oldCenter, oldFar ], VECTOR3_ZERO, "black", "black", 2, 0.2),
+                createDebugLine([ oldCenter, proposedFar ], VECTOR3_ZERO, "grey", "grey", 2, 0.2),
+            )
+            PushDebugObjects(name, 
+                ...debugElements
+            );
+        }
+    }
+
+    EmptyDebugObject(name);
 
     return {
         origin: center,
@@ -252,19 +280,19 @@ function addHullPoints(name : string, initialHull : Point3[], points: Point3[], 
 
     const midPointL = a.medianPointTo(farthestPoint);
     const midPointR = farthestPoint.medianPointTo(c);
-    const leftLines = leftSet.map(x => createDebugLine([ midPointL, x], "green", "orange", 1, 0.1));
-    const rightLines = rightSet.map(x => createDebugLine([ midPointR, x], "green", "violet", 1, 0.1));
+    const leftLines = leftSet.map(x => createDebugLine([ midPointL, x], VECTOR3_ZERO, "green", "orange", 1, 0.1));
+    const rightLines = rightSet.map(x => createDebugLine([ midPointR, x], VECTOR3_ZERO, "green", "violet", 1, 0.1));
     
     PushDebugObjects(
         name, 
-        createDebugLine([ p1, p2 ], "pink", "pink", 2, 0.2),
-        createDebugLine([ p1, farthestPoint ], "pink", "pink", 2, 0.2),
-        createDebugLine([ p2, farthestPoint ], "pink", "pink", 2, 0.2),
+        createDebugLine([ p1, p2 ], VECTOR3_ZERO, "pink", "pink", 2, 0.2),
+        createDebugLine([ p1, farthestPoint ], VECTOR3_ZERO, "pink", "pink", 2, 0.2),
+        createDebugLine([ p2, farthestPoint ], VECTOR3_ZERO, "pink", "pink", 2, 0.2),
         createDebugLine(initialHull), 
         createDebugText(`p2 - ${a === p2 ? 'A' : 'C'}`, p2.toVector3()),
         createDebugText(`p1 - ${a === p1 ? 'A' : 'C'}`, p1.toVector3()),
         createDebugText(`F`, farthestPoint.toVector3()),
-        createDebugLine([ midPoint, farthestPoint ], "green", "green", 1),
+        createDebugLine([ midPoint, farthestPoint ], VECTOR3_ZERO, "green", "green", 1),
         ...leftLines,
         ...rightLines
     );
@@ -412,13 +440,29 @@ export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
 export function arePointsCollinear(points: Point3[]): boolean {
     if (points.length < 3) return true; // Any two points are always collinear
 
-    const baseVector = points[1].sub(points[0]);
+    const TOLERANCE_EPSILON = 1e-10; // Tolerance to handle floating-point precision
 
+    let baseVector: Vector3 | null = null;
+
+    // Find the first non-zero baseVector by iterating through the points
+    for (let i = 1; i < points.length; i++) {
+        baseVector = points[i].sub(points[0]);
+        if (baseVector.length() > TOLERANCE_EPSILON) {
+            break; // Found a valid base vector
+        }
+    }
+
+    // If we don't find a valid baseVector, it means all points are the same
+    if (!baseVector || baseVector.length() <= TOLERANCE_EPSILON) {
+        return true; // All points are coincident, trivially collinear
+    }
+
+    // Now check the rest of the points using the found baseVector
     for (let i = 2; i < points.length; i++) {
         const currentVector = points[i].sub(points[0]);
-        const crossProduct = baseVector.cross(currentVector);
-
-        if (!Point3.fromVector3(crossProduct).isZero()) {
+        const crossProductInt = crossProduct(baseVector, currentVector);
+        // Check if the cross product is close to zero (meaning points are collinear)
+        if (crossProductInt.length() > TOLERANCE_EPSILON) {
             return false; // Found a non-zero cross product, points are not collinear
         }
     }

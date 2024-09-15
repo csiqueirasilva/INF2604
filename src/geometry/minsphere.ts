@@ -3,6 +3,8 @@ import { errorIfPointsColinear3, errorIfPointsColinear4 } from "@geometry/euler"
 import { det4x4 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, findExtremePoints, findFarthestPoints, PolarReference } from "@geometry/topology";
+import { ClearDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
+import { createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { shuffleArray } from "@helpers/arrays";
 import * as THREE from 'three';
 
@@ -90,29 +92,43 @@ export function calcCircumsphere(p1 :Point3, p2:Point3, p3:Point3, p4:Point3) : 
     return { origin: Point3.fromVector3(center), radius };
 }
 
-export function minSphere(points: Point3[]): PolarReference {
+export function minSphere(points: Point3[], name : string = "MinSphere"): PolarReference {
     if (points.length < 2) {
         throw new Error("Não podemos calcular a esfera mínima sem ao menos dois pontos.");
     }
 
+    ClearDebugObject(name);
+
     let c: PolarReference;
 
+    const collinearCheck = arePointsCollinear(points);
+
+    PushDebugObjects(name, 
+        createDebugText(`${collinearCheck ? "Pontos colineares" : "Pontos não colineares"}`)
+    );
+
     // Check if all points are collinear
-    if (arePointsCollinear(points)) {
+    if (collinearCheck) {
         // Find the two extreme points (farthest apart)
         let extremePoints = findExtremePoints(points);
         // Calculate the sphere as the diameter of these points
         c = calcDiameter(extremePoints[0], extremePoints[1]);
+        PushDebugObjects(name, 
+            createDebugSphere(c.origin, c.radius)
+        );
     } else {
         // Check if all points are coplanar
         const coplanar = arePointsCoplanar(points);
         // If points are neither collinear nor coplanar, proceed with 3D sphere calculation
         let shuffled = shuffleArray(points);
         c = calcDiameter(shuffled[0], shuffled[1]);
+        PushDebugObjects(name, 
+            createDebugSphere(c.origin, c.radius)
+        );
         for (let i = 2; i < shuffled.length; i++) {
             const p = shuffled[i];
             if (!isInSphere(c, p)) {
-                c = calcCircleWithAPoint(coplanar, shuffled.slice(0, i), p);
+                c = calcCircleWithAPoint(coplanar, shuffled.slice(0, i), p, name);
             }
         }
     }
@@ -125,35 +141,47 @@ export function minSphere(points: Point3[]): PolarReference {
 }
 
 
-function calcCircleWithAPoint(coplanar : boolean, points: Point3[], q: Point3): PolarReference {
+function calcCircleWithAPoint(coplanar : boolean, points: Point3[], q: Point3, name : string): PolarReference {
     let c: PolarReference = calcDiameter(points[0], q);
+    PushDebugObjects(name, 
+        createDebugSphere(c.origin, c.radius)
+    );
     for (let j = 1; j < points.length; j++) {
         const pj = points[j];
         if (!isInSphere(c, pj)) {
-            c = calcCircleWithTwoPoints(coplanar, points.slice(0, j), pj, q);
+            c = calcCircleWithTwoPoints(coplanar, points.slice(0, j), pj, q, name);
         }
     }
     return c;
 }
 
-function calcCircleWithTwoPoints(coplanar : boolean, points: Point3[], q1: Point3, q2: Point3): PolarReference {
+function calcCircleWithTwoPoints(coplanar : boolean, points: Point3[], q1: Point3, q2: Point3, name : string): PolarReference {
     let c: PolarReference = calcDiameter(q1, q2);
+    PushDebugObjects(name, 
+        createDebugSphere(c.origin, c.radius)
+    );
     for (let k = 0; k < points.length; k++) {
         const pk = points[k];
         if (!isInSphere(c, pk)) {
-            c = calcCircleWithThreePoints(coplanar, points.slice(0, k), pk, q1, q2);
+            c = calcCircleWithThreePoints(coplanar, points.slice(0, k), pk, q1, q2, name);
         }
     }
     return c;
 }
 
-function calcCircleWithThreePoints(coplanar : boolean, points: Point3[], q1: Point3, q2: Point3, q3: Point3): PolarReference {
+function calcCircleWithThreePoints(coplanar : boolean, points: Point3[], q1: Point3, q2: Point3, q3: Point3, name : string): PolarReference {
     let c: PolarReference = calcCircumcircle(q1, q2, q3);
+    PushDebugObjects(name, 
+        createDebugSphere(c.origin, c.radius)
+    );
     if(!coplanar) {
         for (let l = 0; l < points.length; l++) {
             const pl = points[l];
             if (!isInSphere(c, pl)) {
                 c = calcCircumsphere(pl, q1, q2, q3);
+                PushDebugObjects(name, 
+                    createDebugSphere(c.origin, c.radius)
+                );
             }
         }
     }
