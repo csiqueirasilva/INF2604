@@ -177,7 +177,7 @@ export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere")
 
     const dtFinish = (new Date()).getTime();
 
-    PushDebugObject(name, createDebugText(`${name}: radius ${radius.toFixed(2)}; ${(dtFinish - dtStart)}ms`, new Vector3(0, -6, 0)));
+    PushDebugObject(name, createDebugText(`${name}: r ${radius.toFixed(2)}; c ${center.toString()}; ${(dtFinish - dtStart)}ms`, new Vector3(0, -6, 0)));
 
     return {
         origin: center,

@@ -13,6 +13,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [1.2, 0.3],
       [-1.6, 3.7],
     ],
+    description: `Radius: 5.19, Center: (0.97, -0.69, 0.00)`,
   },
   {
     name: '10 pontos em 3D',
@@ -28,6 +29,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [2.9, 4.3, -2.3],
       [-1.2, -2.5, 4.6],
     ],
+    description: `Radius: 6.12, Center: (-0.15, -0.15, 0.60)`,
   },
   {
     name: '40 pontos em 2D',
@@ -73,6 +75,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [2.8, -0.7],
       [3.0, -1.1],
     ],
+    description: `Radius: 5.37, Center: (-2.25, 0.02, 0.00)`,
   },
   {
     name: '40 pontos em 3D',
@@ -120,6 +123,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [-2.5, 2.5, -2.5],
       [-2.2, 2.2, -2.2],
     ],
+    description: `Radius: 8.06, Center: (-0.38, 0.00, -0.38)`,
   },
   {
     name: 'Pontos coplanares em 3D (plano: z = 0.5x - y + 2)',
@@ -135,6 +139,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [1.0, 4.0, 2.5],
       [2.5, 5.0, 1.75],
     ],
+    description: `Radius: 5.66, Center: (-0.75, 0.5, 2.88)`,
   },
   {
     name: '10 pontos, alguns colineares',
@@ -150,6 +155,7 @@ export const SAMPLE_POINT_CLOUDS = [
       [-2.5, -1.1],
       [0.3, 4.8],
     ],
+    description: `Radius: 5.74, Center: (-1.14, -0.76, -0.00)`,
   },
   {
     name: '50 pontos na periferia de um círculo (z=0)',
@@ -163,6 +169,7 @@ export const SAMPLE_POINT_CLOUDS = [
         return [parseFloat(x.toFixed(4)), parseFloat(y.toFixed(4)), 0.0];
       }),
     ],
+    description: `Radius: 5.00, Center: (0.00, 0.00, 0.00)`,
   },
   {
     name: '30 pontos no eixo y (x=0, z=0)',
@@ -172,6 +179,7 @@ export const SAMPLE_POINT_CLOUDS = [
         return [0.0, parseFloat(y.toFixed(2)), 0.0];
       }),
     ],
+    description: `Radius: 5.00, Center: (0.00, 0.00, 0.00)`,
   },
   {
     name: '40 pontos nas arestas de um quadrado',
@@ -197,5 +205,6 @@ export const SAMPLE_POINT_CLOUDS = [
         return [-5.0, parseFloat(y.toFixed(2))];
       }),
     ],
+    description: `Radius: 7.07, Center: (0.00, 0.00)`,
   },
 ];

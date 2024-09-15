@@ -2,6 +2,7 @@ import { Button } from "@components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogOverlay, DialogTitle } from "@components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Textarea } from "@components/ui/textarea";
+import { P } from "@components/ui/typography";
 import { Point3 } from "@geometry/points";
 import { SAMPLE_POINT_CLOUDS } from "@geometry/samplePointClouds";
 import { exportPointsAsText, importPoints, importPointsFromMatrix, importPointsFromText } from "@helpers/export";
@@ -16,6 +17,7 @@ interface Props {
 
 export default function ImportExportPointCloudDialog(props : Props) {
     const [ pointsAsText, setPointsAsText ] = useState('');
+    const [ descriptionText, setDescriptionText ] = useState('');
     useEffect(() => {
         if(props.importDialogOpen) {
             const text = exportPointsAsText(props.points);
@@ -23,6 +25,7 @@ export default function ImportExportPointCloudDialog(props : Props) {
         } else {
             setPointsAsText('');
         }
+        setDescriptionText('');
     }, [ props.importDialogOpen ]);
     useEffect(() => {
 
@@ -41,6 +44,9 @@ export default function ImportExportPointCloudDialog(props : Props) {
                         let points = importPointsFromMatrix(cloud.points);
                         let txt = exportPointsAsText(points);
                         setPointsAsText(txt);
+                        setDescriptionText(`${cloud.name}; ${cloud.description}`);
+                    } else {
+                        setDescriptionText('');
                     }
                 }}>
                     <SelectTrigger className="w-[100%]">
@@ -52,6 +58,7 @@ export default function ImportExportPointCloudDialog(props : Props) {
                         }
                     </SelectContent>
                 </Select>
+                <div>{ descriptionText }</div>
                 <Textarea className={"h-[400px] resize-none"} defaultValue={pointsAsText} onChange={(ev) => setPointsAsText(ev.target.value)} />
                 <Button onClick={() => {
                     try {

@@ -141,7 +141,7 @@ export function minSphere(points: Point3[], name : string = "MinSphere"): PolarR
         throw new Error("Não conseguiu gerar esfera mínima.");
     }
 
-    PushDebugObject(name, createDebugText(`${name}: radius ${c.radius.toFixed(2)}; ${(dtFinish - dtStart)}ms`, new THREE.Vector3(0, 6, 0)));
+    PushDebugObject(name, createDebugText(`${name}: r ${c.radius.toFixed(2)}; c ${c.origin.toString()}; ${(dtFinish - dtStart)}ms`, new THREE.Vector3(0, 6, 0)));
 
     return c;
 }
