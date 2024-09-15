@@ -1,3 +1,66 @@
+function rotatePoint(point: number[], angle: number): number[] {
+  const [x, y, z] = point;
+  const [ax, ay, az] = [0, 0, 1];
+  
+  const cosAngle = Math.cos(angle);
+  const sinAngle = Math.sin(angle);
+  
+  const rotatedX = x * cosAngle - y * sinAngle;
+  const rotatedY = x * sinAngle + y * cosAngle;
+  
+  return [parseFloat(rotatedX.toFixed(4)), parseFloat(rotatedY.toFixed(4)), z];
+}
+
+function generateTrianglePoints(
+  baseLeft: number[],
+  baseRight: number[],
+  top: number[],
+  numPointsBase: number,
+  numPointsSides: number,
+  angle: number = 0
+): number[][] {
+  // Calculate points on the base
+  const basePoints = Array.from({ length: numPointsBase - 2 }, (_, i) => {
+    const t = (i + 1) / (numPointsBase - 1);  // Fraction along the base
+    const x = baseLeft[0] + t * (baseRight[0] - baseLeft[0]);
+    const y = baseLeft[1] + t * (baseRight[1] - baseLeft[1]);
+    return rotatePoint([parseFloat(x.toFixed(4)), parseFloat(y.toFixed(4)), 0], angle);
+  });
+
+  // Calculate points on the left side (baseLeft -> top)
+  const leftSidePoints = Array.from({ length: numPointsSides - 2 }, (_, i) => {
+    const t = (i + 1) / (numPointsSides - 1);
+    const x = baseLeft[0] + t * (top[0] - baseLeft[0]);
+    const y = baseLeft[1] + t * (top[1] - baseLeft[1]);
+    return rotatePoint([parseFloat(x.toFixed(4)), parseFloat(y.toFixed(4)), 0], angle);
+  });
+
+  // Calculate points on the right side (baseRight -> top)
+  const rightSidePoints = Array.from({ length: numPointsSides - 2 }, (_, i) => {
+    const t = (i + 1) / (numPointsSides - 1);
+    const x = baseRight[0] + t * (top[0] - baseRight[0]);
+    const y = baseRight[1] + t * (top[1] - baseRight[1]);
+    return rotatePoint([parseFloat(x.toFixed(4)), parseFloat(y.toFixed(4)), 0], angle);
+  });
+
+  // Rotate base, top, and other points
+  const rotatedBaseLeft = rotatePoint(baseLeft, angle);
+  const rotatedBaseRight = rotatePoint(baseRight, angle);
+  const rotatedTop = rotatePoint(top, angle);
+
+  // Combine all points: base vertices, basePoints, leftSidePoints, rightSidePoints
+  const points = [
+    rotatedBaseLeft,           // Left vertex of the base
+    rotatedBaseRight,          // Right vertex of the base
+    rotatedTop,                // Top vertex
+    ...basePoints,             // Points along the base
+    ...leftSidePoints,         // Points along the left side
+    ...rightSidePoints         // Points along the right side
+  ];
+
+  return points;
+}
+
 export const SAMPLE_POINT_CLOUDS = [
   {
     name: '10 pontos em 2D',
@@ -182,6 +245,17 @@ export const SAMPLE_POINT_CLOUDS = [
     description: `Radius: 5.00, Center: (0.00, 0.00, 0.00)`,
   },
   {
+    name: '30 pontos no eixo y (x=0, z=0) + 1 não colinear',
+    points: [
+      ...Array.from({ length: 30 }, (_, i) => {
+        const y = -5 + (i * 10) / 29; // y varies from -5 to 5
+        return [0.0, parseFloat(y.toFixed(2)), 0.0];
+      }),
+      [5, 0, 0]
+    ],
+    description: `Radius: 5.00, Center: (0.00, 0.00, 0.00)`,
+  },
+  {
     name: '40 pontos nas arestas de um quadrado',
     points: [
       // Aresta inferior de (-5, -5) a (5, -5)
@@ -206,5 +280,22 @@ export const SAMPLE_POINT_CLOUDS = [
       }),
     ],
     description: `Radius: 7.07, Center: (0.00, 0.00)`,
+  },
+  {
+    name: 'Triângulo com 15 pontos',
+    points: [ 
+      ...generateTrianglePoints([0, 0, 0], [5, 0, 0], [2.5, 4.33, 0], 5, 5),
+      [2.5, 1, 0],
+      [2.5, 2, 0],
+      [2.5, 3, 0]
+    ],
+    description: `Radius: 2.89, Center: (2.50, 1.44, 0.00)`,
+  },
+  {
+    name: 'Triângulo com 12 pontos rotacionado',
+    points: [ 
+      ...generateTrianglePoints([0, 0, 0], [5, 0, 0], [2.5, 4.33, 0], 5, 5, Math.PI / 4)
+    ],
+    description: `Radius: 2.89, Center: (0.75, 2.79, 0.00)`,
   },
 ];

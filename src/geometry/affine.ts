@@ -178,33 +178,3 @@ export function orientation3D(p1: Point3, p2: Point3, p3: Point3, p4: Point3): O
 
     return volume > 0 ? OrientationCase.COUNTER_CLOCK_WISE : OrientationCase.CLOCK_WISE;
 }
-
-// theta(1)
-export function chordLengthAtPoint(
-    sphereCenter: Point3|Vector3,
-    sphereRadius: number,
-    point: { x: number; y: number; z: number },
-
-): number {
-    // Calculate the squared distance from sphere center to point P
-    const dx = point.x - sphereCenter.x;
-    const dy = point.y - sphereCenter.y;
-    const dz = point.z - sphereCenter.z;
-    const dSquared = dx * dx + dy * dy + dz * dz;
-
-    const radiusSquared = sphereRadius * sphereRadius;
-
-    console.log(dSquared, radiusSquared + TOLERANCE_EPSILON)
-    if (dSquared > (radiusSquared + TOLERANCE_EPSILON)) {
-        // Point is outside the sphere
-        return 0;
-    }
-
-    // Calculate r
-    const r = Math.sqrt(radiusSquared - dSquared);
-
-    // Chord length L
-    const chordLength = 2 * r;
-
-    return chordLength;
-}

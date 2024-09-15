@@ -4,7 +4,7 @@ import { invertMatrix3x3 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { ClearDebugObject, ClearDebugObjects, EmptyDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
 import { createDebugArrow, createDebugLine, createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
-import { BufferGeometry, Vector3 } from "three";
+import { BufferGeometry, Object3D, Vector3 } from "three";
 import { ConvexHull3D, Face } from "@geometry/quickhull3d";
 import { normalize } from "three/src/math/MathUtils";
 import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
@@ -138,41 +138,34 @@ export function boundingSphereInCloud(points: Point3[], name = "BoundingSphere")
     );
 
     for (const point of points) {
-        const dist = point.sub(center);
-        const checkVector = farthestPoint.sub(point);
-        const shouldAdjust = vectorLength(dist) > radius;
-        
+        const dirVector = point.sub(center);
+        const normalizedDirVector = normalizeVector(dirVector);
+        const radiusVector = scaleVector(normalizedDirVector, radius);
+        const shouldAdjust = vectorLength(dirVector) > radius;
+
         if(shouldAdjust) {
-            const toBeReflected = farthestPoint.sub(center);
-            const reflectionAxis = normalizeVector(checkVector);
-            const reflected = reflectVector(toBeReflected, reflectionAxis);
-            const reflectedFromCenter = addVectors(center.toVector3(), reflected);
-            const adjustVector = scaleVector(point.sub(Point3.fromVector3(reflectedFromCenter)), 0.5);
-            const excessDistance = vectorLength(adjustVector);
-            const debugElements = [ 
-                createDebugArrow( center, farthestPoint, "black"),
-                createDebugArrow(farthestPoint, point, shouldAdjust ? "green" : "red"),
-                createDebugSphere(center, radius),
-                createDebugLine([ scaleVector(reflectionAxis, -0.5), scaleVector(reflectionAxis, 0.5) ], center, "purple", "PURPLE"),
-                createDebugArrow(center, reflectedFromCenter, "purple"),
-                createDebugArrow(reflectedFromCenter , point, "red"),
-                createDebugArrow(center, addVectors(center.toVector3(), adjustVector), "yellow")
-            ];
-            const oldCenter = center.toVector3();
-            const newCenter = addVectors(center.toVector3(), adjustVector);
-            radius += excessDistance;
-            center = Point3.fromVector3(newCenter);
-            // compute new center
-            const oldFar = farthestPoint.toVector3();
-            const proposedFar = point.toVector3();
+            const differenceVector = subVectors(radiusVector, dirVector);
+            const excessDistance = vectorLength(differenceVector);
+            const newCenter = center.sub(Point3.fromVector3(differenceVector));
+
+            let debugElements : any[] = [];
+
             debugElements.push(
-                createDebugLine([ oldCenter, oldFar ], VECTOR3_ZERO, "black", "black", 2, 0.2),
-                createDebugLine([ oldCenter, proposedFar ], VECTOR3_ZERO, "grey", "grey", 2, 0.2),
-            )
+                createDebugSphere(center, radius),
+                createDebugArrow(center, dirVector.add(center), "red"),
+                createDebugArrow(center, normalizedDirVector.add(center), "blue"),
+                createDebugArrow(center, radiusVector.add(center), "green"),
+                createDebugArrow(center, newCenter, "yellow")
+            );
+
+            radius += excessDistance / 2;
+            center = Point3.fromVector3(newCenter);
+
             PushDebugObjects(name, 
                 ...debugElements
             );
         }
+
     }
 
     const dtFinish = (new Date()).getTime();
@@ -271,7 +264,7 @@ function addHullPoints(name : string, initialHull : Point3[], points: Point3[], 
 
     const midPoint = p2.medianPointTo(p1);
 
-    const filteredPoints = points.filter(x => !isPointInsideTriangle(x, p1, p2, farthestPoint));
+    const filteredPoints = points.filter(x => !isPointInsideTriangle(x, p1, p2, farthestPoint) || arePointsCollinear([x, p1, farthestPoint]));
 
     let m1 = farthestPoint;
     let m2 = midPoint;
@@ -315,7 +308,7 @@ function quickHullSplitPoints2d(points: Point3[], a: Point3, b: Point3) {
             leftSet.push(p);
         } else if (orientationAB === OrientationCase.CLOCK_WISE) {
             rightSet.push(p);
-        } // todo: handle collinear
+        } /* ignore collinear here */
     });
 
     return { leftSet, rightSet };
@@ -381,6 +374,8 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
 
     ClearDebugObject(name);
 
+    const dtStart = (new Date()).getTime();
+
     if(arePointsCoplanar(points)) {
         if(points.length >= 3) {
             // quickhull 2d
@@ -397,6 +392,10 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
         // quickhull 3d
         ret = quickHull3d(points);
     }
+
+    const dtFinish = (new Date()).getTime();
+
+    PushDebugObject(name, createDebugText(`${name}: ${ret.length - 1} pontos; ${(dtFinish - dtStart)}ms`, new Vector3(0, 6, 0)));
 
     return ret;
 }
