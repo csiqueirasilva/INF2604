@@ -73,7 +73,7 @@ export class Point3 {
         return this.x * other.x + this.y * other.y + this.z * other.z;
     }
     static fromVector3 = (v : Vector3) : Point3 => new Point3(v.x, v.y, v.z)
-    public toString = () : string => `(${this.x.toFixed(2)},${this.y.toFixed(2)},${this.z.toFixed(2)})`
+    public toString = (precision = 2) : string => `(${this.x.toFixed(precision)},${this.y.toFixed(precision)},${this.z.toFixed(precision)})`
 }
 
 export enum PointGenerationType {

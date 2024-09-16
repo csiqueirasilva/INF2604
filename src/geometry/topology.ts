@@ -1,13 +1,14 @@
-import { addVectors, crossProduct, distanceBetweenPoints, dotProduct, orientation2D, orientation3D, OrientationCase, reflectVector, reverseVector, rotateVector, scaleVector, subVectors, vectorLength, vectorSameDirection } from "@geometry/affine";
+import { addVectors, CollinearOrderingCase, crossProduct, distanceBetweenPoints, dotProduct, ordering2D, orientation1D, orientation2D, orientation3D, OrientationCase, reflectVector, reverseVector, rotateVector, scaleVector, subVectors, vectorLength, vectorSameDirection } from "@geometry/affine";
 import { calculatePlaneNormal, normalizeVector } from "@geometry/euler";
 import { invertMatrix3x3 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
-import { ClearDebugObject, ClearDebugObjects, EmptyDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
-import { createDebugArrow, createDebugLine, createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
-import { BufferGeometry, Object3D, Vector3 } from "three";
+import { createDebugArrow, createDebugArrowSegments, createDebugHighlightPoint, createDebugLine, createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
+import { BufferGeometry, Color, Object3D, Vector3 } from "three";
 import { ConvexHull3D, Face } from "@geometry/quickhull3d";
 import { normalize } from "three/src/math/MathUtils";
 import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
+import { isLoaded } from "expo-font";
+import { ClearDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelperExports";
 
 export function findClosestPoints(points: Point3[]): Point3[] {
     const n = points.length;
@@ -264,7 +265,7 @@ function addHullPoints(name : string, initialHull : Point3[], points: Point3[], 
 
     const midPoint = p2.medianPointTo(p1);
 
-    const filteredPoints = points.filter(x => !isPointInsideTriangle(x, p1, p2, farthestPoint) || arePointsCollinear([x, p1, farthestPoint]));
+    const filteredPoints = points.filter(x => !isPointInsideTriangle(x, p1, p2, farthestPoint));
 
     let m1 = farthestPoint;
     let m2 = midPoint;
@@ -314,9 +315,59 @@ function quickHullSplitPoints2d(points: Point3[], a: Point3, b: Point3) {
     return { leftSet, rightSet };
 }
 
-function quickHull2d(name : string, points: Point3[]) : Point3[] {
+const DEBUG_QUICKHULL_COLLINEAR = true;
 
-    const ret : Point3[] = [];
+function quickHull2dSolveCollinear(points: Point3[], hullPoints: Point3[]): void {
+    for(let j = 0; j < points.length; j++) {
+        const point = points[j];
+        const notIncluded = hullPoints.indexOf(point) === -1;
+        if(notIncluded) {
+            for (let i = 1; i < hullPoints.length; i++) {
+                const p1 = hullPoints[i - 1];
+                let p2 = hullPoints[i];
+                for(let k = i + 1; 
+                    k < hullPoints.length
+                ; k++) {
+                    if(vectorLength(p1.sub(p2)) <= TOLERANCE_EPSILON) {
+                        continue; /* if points are at same position keep checking */
+                    }
+                    const check = ordering2D(p2, hullPoints[k], point);
+                    if(check === CollinearOrderingCase.AFTER) {
+                        p2 = hullPoints[k];
+                        i = k;
+                    } else {
+                        break;
+                    }
+                }
+                const ordering2d = ordering2D(p1, p2, point);
+                if(DEBUG_QUICKHULL_COLLINEAR) {
+                    PushDebugObjects(
+                        `QuickHull`, 
+                        ...createDebugArrowSegments(hullPoints),
+                        createDebugHighlightPoint(p1, "green"), 
+                        createDebugHighlightPoint(p2, "blue"), 
+                        createDebugHighlightPoint(point, "red"),
+                        createDebugText(`segment_dist=${vectorLength(p1.sub(p2))}; p1=${p1.toString()}; p2=${p2.toString()}; point=${point.toString()}; order=${ordering2d}`, new Vector3(0, 8, 0))
+                    );
+                }
+                if (ordering2d !== CollinearOrderingCase.NOT_COLINEAR) {
+                    let posInsert = ordering2d === CollinearOrderingCase.BEFORE ?
+                        i - 1: (ordering2d === CollinearOrderingCase.AFTER ? i + 1 : i);
+                    if(posInsert <= 0) {
+                        posInsert = hullPoints.length;
+                    }
+                    hullPoints.splice(posInsert, 0, point); // Insert the point between p1 and p2
+                    if(DEBUG_QUICKHULL_COLLINEAR) {
+                        PushDebugObjects(`QuickHull`, ...createDebugArrowSegments(hullPoints));
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+function quickHull2d(name : string, points: Point3[]) : Point3[] {
 
     let minXPoint = points[0];
     let maxXPoint = points[0];
@@ -375,12 +426,16 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
     ClearDebugObject(name);
 
     const dtStart = (new Date()).getTime();
+    const coplanarCase = arePointsCoplanar(points);
 
-    if(arePointsCoplanar(points)) {
+    if(coplanarCase) {
         if(points.length >= 3) {
             // quickhull 2d
             const [ rotatedPoints, rotationMatrix ] = rotatePointsToZPlane(points);
             const hulledPoints = quickHull2d(name, rotatedPoints);
+            // added step to check for collinear cases and solve them accordingly
+            // O(n * h)
+            quickHull2dSolveCollinear(rotatedPoints, hulledPoints);
             hulledPoints.push(hulledPoints[0]); // close loop
             PushDebugObjects(
                 name, 
@@ -395,7 +450,12 @@ export function quickHull(points: Point3[], name : string = "QuickHull"): Point3
 
     const dtFinish = (new Date()).getTime();
 
-    PushDebugObject(name, createDebugText(`${name}: ${ret.length - 1} pontos; ${(dtFinish - dtStart)}ms`, new Vector3(0, 6, 0)));
+    if(coplanarCase) {
+        PushDebugObjects(name, 
+            createDebugText(`${name}: ${ret.length - 1} pontos; ${(dtFinish - dtStart)}ms`, new Vector3(0, 6, 0)),
+            ...createDebugArrowSegments(ret)
+        );
+    }
 
     return ret;
 }
@@ -442,8 +502,6 @@ export function findFarthestPoints(points: Point3[]): [ Point3, Point3 ] {
 
 export function arePointsCollinear(points: Point3[]): boolean {
     if (points.length < 3) return true; // Any two points are always collinear
-
-    const TOLERANCE_EPSILON = 1e-10; // Tolerance to handle floating-point precision
 
     let baseVector: Vector3 | null = null;
 

@@ -37,7 +37,7 @@ export async function importPoints(base64: string): Promise<Point3[]> {
 
 export function exportPointsAsText(points : Point3[]): string {
     let str = "";
-    points.forEach(p => str += p.toString() + '\n');
+    points.forEach(p => str += p.toString(8) + '\n');
     return str;
 }
 

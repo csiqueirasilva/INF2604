@@ -3,7 +3,7 @@ import { errorIfPointsColinear3, errorIfPointsColinear4 } from "@geometry/euler"
 import { det4x4 } from "@geometry/math";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, findExtremePoints, findFarthestPoints, PolarReference } from "@geometry/topology";
-import { ClearDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelper";
+import { ClearDebugObject, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelperExports";
 import { createDebugSphere, createDebugText } from "@helpers/3DElements/Debug/debugVisualElements";
 import { shuffleArray } from "@helpers/arrays";
 import * as THREE from 'three';

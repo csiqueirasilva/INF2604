@@ -1,6 +1,7 @@
 import { RADIAN } from "@geometry/constants";
 import { normalizeVector } from "@geometry/euler";
 import { Point3, TOLERANCE_EPSILON } from "@geometry/points";
+import { arePointsCollinear } from "@geometry/topology";
 import { useThree } from "@react-three/fiber";
 import { Vector2, Vector3 } from "three";
 
@@ -104,6 +105,13 @@ export enum OrientationCase {
     CLOCK_WISE = -1
 }
 
+export enum CollinearOrderingCase {
+    NOT_COLINEAR = 0,
+    AFTER = 1,
+    BEFORE = 2,
+    BETWEEN = 3
+}
+
 // theta(1)
 export function orientation1D(x1: number, x2: number): OrientationCase {
     // Calculando via diferença entre os números na dimensão
@@ -166,6 +174,30 @@ export function orientation2D(p1: Point3, p2: Point3, p3: Point3): OrientationCa
     }
 
     return area > 0 ? OrientationCase.COUNTER_CLOCK_WISE : OrientationCase.CLOCK_WISE;
+}
+
+// theta(1)
+export function ordering2D(p1: Point3, p2: Point3, p3: Point3): CollinearOrderingCase {
+    let ret = CollinearOrderingCase.NOT_COLINEAR;
+    
+    if (arePointsCollinear([ p1, p2, p3 ])) {
+
+        const v1 = p2.sub(p1);
+        const v2 = p3.sub(p1);
+        const dot = dotProduct(v1, v2);
+        const lenSq = v1.lengthSq();
+
+        if(dot < 0) {
+            ret = CollinearOrderingCase.BEFORE;            
+        } else if (dot > lenSq) {
+            ret = CollinearOrderingCase.AFTER;
+        } else {
+            ret = CollinearOrderingCase.BETWEEN;
+        }
+
+    }
+
+    return ret;
 }
 
 // theta(1)

@@ -1,6 +1,15 @@
 import { orientation1D, OrientationCase, orientation2D, orientation3D, signedArea2D, signedVolume3D, rotateVector, addVectors, crossProduct, dotProduct, interpolatePoints, multiplyPointByScalar, scaleVector, subVectors, translatePoint, vector2dLength, vectorLength } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
+import { generateTrianglePoints } from "@geometry/samplePointClouds";
+import { arePointsCollinear } from "@geometry/topology";
 import { Vector2, Vector3 } from "three";
+
+describe('Geometry - My tests', () => {
+   it('should validate points are collinear', () => {
+        const triangle = generateTrianglePoints([0, 0, 0], [5, 0, 0], [2.5, 4.33, 0], 5, 5);
+        console.log(triangle)
+   }) 
+})
 
 describe('Geometry Affine Class and Utility Functions', () => {
 

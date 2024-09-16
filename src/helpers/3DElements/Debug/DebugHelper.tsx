@@ -4,20 +4,10 @@ import { Object3D, Vector3 } from "three";
 import { ThreeElements, useThree } from "@react-three/fiber"
 import { Html } from "@react-three/drei";
 import { estimateBytesUsed } from "three-stdlib";
-
-export interface DebugHelperObject {
-    objects: Object3D[]
-    id: string
-}
+import { DebugHelperObject, IDebugHelperContext, setModuleSetter } from "@helpers/3DElements/Debug/DebugHelperExports";
 
 interface Props {
     children: React.ReactNode[] | React.ReactNode | undefined
-}
-
-let moduleSetter: React.Dispatch<React.SetStateAction<DebugHelperObject[]>> | undefined = undefined;
-
-export interface IDebugHelperContext {
-    controlValues: any,
 }
 
 const DebugHelperContext = createContext<IDebugHelperContext | undefined>(undefined);
@@ -75,7 +65,7 @@ export default function DebugHelper(props: Props) {
 
     useEffect(() => {
         if (setDebugObjects instanceof Function) {
-            moduleSetter = setDebugObjects;
+            setModuleSetter(setDebugObjects);
         }
     }, [setDebugObjects]);
 
@@ -88,7 +78,7 @@ export default function DebugHelper(props: Props) {
 
     useEffect(() => {
         return () => {
-            moduleSetter = undefined;
+            setModuleSetter(undefined);
         };
     }, []);
 
@@ -115,53 +105,6 @@ export default function DebugHelper(props: Props) {
             {props.children}
         </DebugHelperContext.Provider>
     );
-}
-
-export function EmptyDebugObject(id: string) {
-    const object = new Object3D();
-    PushDebugObject(id, object);
-}
-
-export function PushDebugObjects(id: string, ...objects: Object3D[]) {
-    if(objects.length > 0) {
-        const object = new Object3D();
-        object.add(...objects);
-        PushDebugObject(id, object);
-    }
-}
-
-export function PushDebugObject(id: string, object: Object3D) {
-    if (moduleSetter instanceof Function) {
-        moduleSetter((prev) => {
-            const copy = [...prev];
-            const idx = copy.findIndex(x => x.id === id);
-            if (idx !== -1) {
-                copy[idx].objects.push(object);
-            } else {
-                copy.push({ id, objects: [object] });
-            }
-            return copy;
-        });
-    }
-}
-
-export function ClearDebugObjects() {
-    if (moduleSetter instanceof Function) {
-        moduleSetter([]);
-    }
-}
-
-export function ClearDebugObject(id: string) {
-    if (moduleSetter instanceof Function) {
-        moduleSetter((prev) => {
-            const copy = [...prev];
-            const idx = copy.findIndex(x => x.id === id);
-            if(idx !== -1) {
-                copy.splice(idx, 1);
-            }
-            return copy;
-        });
-    }
 }
 
 export const useDebugHelper = () => {

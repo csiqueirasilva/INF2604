@@ -1,4 +1,5 @@
 import { Point3 } from '@geometry/points';
+import { createCircleBorderTexture } from '@helpers/canvas';
 import { Platform } from 'react-native';
 import * as THREE from 'three';
 
@@ -58,6 +59,20 @@ export function createDebugArrow(
     arrow.add(cone);
 
     return arrow;
+}
+
+export function createDebugHighlightPoint(
+    point: (THREE.Vector3|Point3), 
+    color : THREE.ColorRepresentation = "black", 
+    lineWidth: number = 2,
+    size : number = 40
+) {
+    const canvas = createCircleBorderTexture(color, size, lineWidth)
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture });
+    let ret = new THREE.Sprite(material);
+    ret.position.set(point.x, point.y, point.z);
+    return ret
 }
 
 export function createDebugLine(
@@ -144,6 +159,21 @@ export function createDebugSphere(
     return sphere;
 }
 
+export function createDebugArrowSegments(points : Point3[]): any[] {
+    let arrows : any = [];
+    const startColor = new THREE.Color(0xff0000); // Red
+    const endColor = new THREE.Color(0x0000ff);   // Blue
+    if(points.length > 1) {
+        arrows.push(createDebugArrow(points[0], points[1], startColor), createDebugText(`${0}`, points[0].toVector3(), 30));
+        for(let i = 1; i < points.length; i++) {
+            const t = i / points.length;
+            const color = startColor.clone().lerp(endColor, t);
+            arrows.push(createDebugArrow(points[i - 1], points[i], color), createDebugText(`${i}`, points[i].toVector3(), 30));
+        }
+    }
+    return arrows;
+}
+
 export function createDebugText(
     text: string, 
     position: THREE.Vector3 = new THREE.Vector3(0, 0, 0), 
@@ -211,9 +241,6 @@ export function createDebugText(
             const aspectRatio = canvasWidth / canvasHeight;
 
             ret.scale.set(aspectRatio, 1, 1);
-
-            // Set the scale of the sprite
-            //ret.scale.copy(scale); // Adjust scale based on the input parameters
         }
     }
 
