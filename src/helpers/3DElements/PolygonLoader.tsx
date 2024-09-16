@@ -10,34 +10,18 @@ import InstancedRenderedPoint from "@helpers/3DElements/InstancedRenderedPoint";
 import { useSceneWithControlsContext, VIEW_TYPE } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
 import { getRandomColorHex } from "@helpers/RNGUtils";
 import ImportExportPointCloudDialog from "@components/ImportExportPointCloudDialog";
+import { createDebugArrowSegments, createDebugLine } from "@helpers/3DElements/Debug/debugVisualElements";
+import { SAMPLE_POLYGONS } from "@geometry/samplePolygons";
 
-export interface RenderPointCloudProps {
+export interface PolygonLoaderProps {
     name: string;
     color?: ColorRepresentation;
-    size?: number;
-    minNumberOfPoints?: number;
-    maxNumberOfPoints?: number;
-    minZ?: number;
-    maxZ?: number;
-    minX?: number;
-    maxX?: number;
-    minY?: number;
-    maxY?: number;
     children?: (points: Point3[]) => React.ReactNode;
 }
 
-const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
+const PolygonLoader: React.FC<PolygonLoaderProps> = ({
     name,
     color = undefined,
-    size = 0.05,
-    minNumberOfPoints = 10,
-    maxNumberOfPoints = 200,
-    minZ = -5,
-    maxZ = 5,
-    minX = -5,
-    maxX = 5,
-    minY = -5,
-    maxY = 5,
     children = undefined
 }) => {
 
@@ -50,24 +34,18 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
     const startColor = useValidColorHex(color);
 
     const ctx = useSceneWithControlsContext();
+
+    useEffect(() => {
+        ctx.setSampleOptions(SAMPLE_POLYGONS);
+    }, [])
+
     const [importDialogOpen, setImportDialogOpen] = useState(false);
 
     const [usedColor, setUsedColor] = useState<string>(startColor);
     const [points, setPoints] = useState<Point3[]>([]);
-    const [nPoints, setNPoints] = useState<number>(2);
-    const [rngType, setRNGType] = useState<PointGenerationType>(PointGenerationType.RANDOM_BRUTE_FORCE);
 
-    const [values, setControls] = useControls(`Núvem de pontos ${name}`, () => {
+    const [values, setControls] = useControls(`Polígono ${name}`, () => {
         const ret: any = {}
-        ret['Gerar núvem de pontos'] = button((get) => {
-            genPoints();
-        })
-        ret['Pontos renderizados'] = { value: nPoints, min: minNumberOfPoints, max: maxNumberOfPoints, step: 1 };
-        ret['Tipo RNG'] = { value: rngType, options: Object.values(PointGenerationType) };
-        ret['Cor'] = { value: startColor };
-        ret['Randomizar pontos'] = button((get) => {
-            setControls({ 'Pontos renderizados': Math.floor(minNumberOfPoints) + Math.floor(Math.random() * (maxNumberOfPoints - minNumberOfPoints)) });
-        })
         ret['Dados da vizualização'] = folder({
             'Export to clipboard': button(async () => {
                 const str = await exportPoints(points);
@@ -90,29 +68,17 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
             })
         })
         return ret;
-    }, [nPoints, points, name, maxNumberOfPoints, minNumberOfPoints, startColor, rngType, usedColor, ctx.viewType]);
-
-    const genPoints = useCallback(() => {
-        if (nPoints >= 0) {
-            const generatedPoints: Point3[] = generateRNGPointCloudBasedOnStrategy(nPoints, values['Tipo RNG'], maxX, minX, maxY, minY, ctx.viewType === VIEW_TYPE.PLANE_XY ? 0 : maxZ, ctx.viewType === VIEW_TYPE.PLANE_XY ? 0 : minZ);
-            setPoints(generatedPoints);
-        }
-    }, [nPoints, values['Tipo RNG'], maxX, minX, maxY, minY, maxZ, minZ, ctx.viewType]);
-
-    useEffect(() => {
-        setNPoints(values['Pontos renderizados']);
-    }, [values['Pontos renderizados']]);
-
-    useEffect(() => {
-        genPoints();
-    }, [values['Tipo RNG'], nPoints, minX, maxX, minY, maxY, minZ, maxZ]);
+    }, [ points, name, startColor, usedColor, ctx.viewType ]);
 
     return (
         <>
             {
                 children instanceof Function && children(points)
             }
-            <InstancedRenderedPoint points={points.map(x => x.toVector3())} color={values['Cor'] || 'black'} size={size} />
+            {/* {
+                createDebugArrowSegments(points).map((arrow, idx) => <primitive key={idx} object={arrow} />)
+            } */}
+            <primitive object={createDebugLine(points)} />
             <Html>
                 <ImportExportPointCloudDialog 
                     options={ctx.sampleOptions}
@@ -126,4 +92,4 @@ const RNGRenderPointCloud: React.FC<RenderPointCloudProps> = ({
     );
 };
 
-export default RNGRenderPointCloud;
+export default PolygonLoader;

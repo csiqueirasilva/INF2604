@@ -6,7 +6,7 @@ import React, {  } from "react";
 function InternalRenderingComponent() {
     return (
         <>
-            <FechoConvexo name="A" minNumberOfPoints={4} />
+            <FechoConvexo name="A" minNumberOfPoints={4} maxNumberOfPoints={20000} />
         </>
     );
 }

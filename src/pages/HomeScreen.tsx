@@ -12,6 +12,7 @@ import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
 import FechoConvexoScreen from "@pages/exercicios/FechoConvexoScreen";
 import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
+import TriangulacaoPoligonoScreen from "@pages/exercicios/TriangulacaoPoligono";
 
 interface RouteEntry {
     url: string
@@ -68,9 +69,19 @@ const routesHelper: RouteSection[] = [{
             url: '/exercicios/circulo-minimo'
         },
         {
+            component: TriangulacaoPoligonoScreen,
+            title: 'Triangulação de polígono',
+            url: '/exercicios/triangulacao-poligono'
+        }
+    ]
+},
+{
+    title: 'Trabalhos',
+    entries: [
+        {
             component: FechoConvexoScreen,
             title: 'Fecho convexo',
-            url: '/exercicios/fecho-convexo'
+            url: '/trabalhos/fecho-convexo'
         }
     ]
 }]

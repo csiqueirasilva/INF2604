@@ -1,3 +1,5 @@
+import { SampleModel } from "@geometry/sampleModel";
+import { SAMPLE_POINT_CLOUDS } from "@geometry/samplePointClouds";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Leva, useControls } from "leva";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -18,10 +20,13 @@ export interface ISceneWithControlsContext {
     setErrorMsg: React.Dispatch<React.SetStateAction<string|undefined>>
     orbitControlsRef: React.MutableRefObject<OrbitControlsImpl | null>
     viewType: VIEW_TYPE
+    sampleOptions: SampleModel[]
+    setSampleOptions: React.Dispatch<React.SetStateAction<SampleModel[]>>
 }
 
 export function SceneWithControlsProvider({ children } : { children : ReactNode }) {
 
+    const [ sampleOptions, setSampleOptions ] = useState(SAMPLE_POINT_CLOUDS);
     const [ sceneLoaded, setSceneLoaded ] = useState(false);
     const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
     const { camera } = useThree();
@@ -66,7 +71,9 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
         orbitControlsRef, 
         viewType: values['Estilo câmera'],
         setErrorMsg,
-        errorMsg
+        errorMsg,
+        setSampleOptions,
+        sampleOptions
     };
 
     return (

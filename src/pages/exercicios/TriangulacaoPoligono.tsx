@@ -1,6 +1,7 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import EsferaMinima from "@helpers/3DElements/EsferaMinima";
 import DefaultSceneWithoutLightning from "@helpers/3DElements/Scenes/DefaultSceneWithoutLightning";
+import TriangulacaoPoligono from "@helpers/3DElements/TriangulacaoPoligono";
 import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useControls } from "leva";
@@ -12,16 +13,16 @@ import * as THREE from "three";
 function InternalRenderingComponent() {
     return (
         <>
-            <EsferaMinima name="A" minNumberOfPoints={2} maxNumberOfPoints={20000} />
+            <TriangulacaoPoligono name="Polígono" minNumberOfPoints={2} maxNumberOfPoints={1000} />
         </>
     );
 }
 
-export default function PontosMaisProximos() {
+export default function TriangulacaoPoligonoScreen() {
 
     return (
         <>
-            <HeaderWithBackButton title="Exercícios - Círculo mínimo" />
+            <HeaderWithBackButton title="Exercícios - Triangulação de polígono" />
             <DefaultSceneWithoutLightning>
                 <InternalRenderingComponent />
             </DefaultSceneWithoutLightning>

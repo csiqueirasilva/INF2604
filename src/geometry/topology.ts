@@ -315,7 +315,7 @@ function quickHullSplitPoints2d(points: Point3[], a: Point3, b: Point3) {
     return { leftSet, rightSet };
 }
 
-const DEBUG_QUICKHULL_COLLINEAR = true;
+const DEBUG_QUICKHULL_COLLINEAR = false;
 
 function quickHull2dSolveCollinear(points: Point3[], hullPoints: Point3[]): void {
     for(let j = 0; j < points.length; j++) {

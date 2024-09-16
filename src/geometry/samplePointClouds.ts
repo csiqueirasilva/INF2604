@@ -1,3 +1,5 @@
+import { SampleModel } from "@geometry/sampleModel";
+
 function rotatePoint(point: number[], angle: number): number[] {
   const [x, y, z] = point;
   
@@ -60,7 +62,7 @@ export function generateTrianglePoints(
   return points;
 }
 
-export const SAMPLE_POINT_CLOUDS = [
+export const SAMPLE_POINT_CLOUDS : SampleModel[] = [
   {
     name: '10 pontos em 2D',
     points: [

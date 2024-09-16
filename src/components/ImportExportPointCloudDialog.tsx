@@ -2,10 +2,9 @@ import { Button } from "@components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogOverlay, DialogTitle } from "@components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
 import { Textarea } from "@components/ui/textarea";
-import { P } from "@components/ui/typography";
 import { Point3 } from "@geometry/points";
-import { SAMPLE_POINT_CLOUDS } from "@geometry/samplePointClouds";
-import { exportPointsAsText, importPoints, importPointsFromMatrix, importPointsFromText } from "@helpers/export";
+import { SampleModel } from "@geometry/sampleModel";
+import { exportPointsAsText, importPointsFromMatrix, importPointsFromText } from "@helpers/export";
 import { useEffect, useState } from "react";
 
 interface Props {
@@ -13,6 +12,7 @@ interface Props {
     setImportDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
     points: Point3[],
     setPoints: React.Dispatch<React.SetStateAction<Point3[]>>;
+    options: SampleModel[]
 }
 
 export default function ImportExportPointCloudDialog(props : Props) {
@@ -39,7 +39,7 @@ export default function ImportExportPointCloudDialog(props : Props) {
                     <DialogDescription>Pontos no formato (x,y,z); um em cada linha</DialogDescription>
                 </DialogHeader>
                 <Select value={''} onValueChange={(value) => {
-                    const cloud = SAMPLE_POINT_CLOUDS.find(x => x.name === value);
+                    const cloud = props.options.find(x => x.name === value);
                     if(cloud) {
                         let points = importPointsFromMatrix(cloud.points);
                         let txt = exportPointsAsText(points);
@@ -54,7 +54,7 @@ export default function ImportExportPointCloudDialog(props : Props) {
                     </SelectTrigger>
                     <SelectContent>
                         {
-                            SAMPLE_POINT_CLOUDS.map((cloud, idx) => <SelectItem key={idx} value={cloud.name}>{cloud.name}</SelectItem>)
+                            props.options.map((cloud, idx) => <SelectItem key={idx} value={cloud.name}>{cloud.name}</SelectItem>)
                         }
                     </SelectContent>
                 </Select>
