@@ -4,13 +4,6 @@ import { generateTrianglePoints } from "@geometry/samplePointClouds";
 import { arePointsCollinear } from "@geometry/topology";
 import { Vector2, Vector3 } from "three";
 
-describe('Geometry - My tests', () => {
-   it('should validate points are collinear', () => {
-        const triangle = generateTrianglePoints([0, 0, 0], [5, 0, 0], [2.5, 4.33, 0], 5, 5);
-        console.log(triangle)
-   }) 
-})
-
 describe('Geometry Affine Class and Utility Functions', () => {
 
     describe('Point3 Class', () => {
