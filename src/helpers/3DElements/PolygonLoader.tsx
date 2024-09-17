@@ -18,7 +18,7 @@ export interface PolygonLoaderProps {
     name: string;
     color?: ColorRepresentation;
     children?: (points: Point3[]) => React.ReactNode;
-    initialPoints: Point3[]
+    initialPoints?: Point3[]
 }
 
 const PolygonLoader: React.FC<PolygonLoaderProps> = ({

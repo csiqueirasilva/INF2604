@@ -62,7 +62,41 @@ export function generateTrianglePoints(
   return points;
 }
 
+export function generateRandomPointsOnSphere(radius: number, numPoints: number): number[][] {
+  const points: number[][] = [];
+
+  for (let i = 0; i < numPoints; i++) {
+    // Generate two random angles for spherical coordinates
+    const theta = Math.random() * 2 * Math.PI; // Azimuthal angle
+    const phi = Math.acos(2 * Math.random() - 1); // Polar angle
+
+    // Convert spherical coordinates to Cartesian coordinates
+    const x = radius * Math.sin(phi) * Math.cos(theta);
+    const y = radius * Math.sin(phi) * Math.sin(theta);
+    const z = radius * Math.cos(phi);
+
+    points.push([x, y, z]);
+  }
+
+  return points;
+}
+
 export const SAMPLE_POINT_CLOUDS : SampleModel[] = [
+  {
+    name: '100 pontos em esfera de raio 4',
+    points: generateRandomPointsOnSphere(4, 100),
+    description: 'Radius: 4'
+  },
+  {
+    name: '2000 pontos em esfera de raio 5',
+    points: generateRandomPointsOnSphere(5, 2000),
+    description: 'Radius: 5'
+  },
+  {
+    name: '20000 pontos em esfera de raio 3.5',
+    points: generateRandomPointsOnSphere(3.5, 20000),
+    description: 'Radius: 3.5'
+  },
   {
     name: '10 pontos em 2D',
     points: [
