@@ -12,7 +12,8 @@ export interface Triangle {
 function isMiddleAngleConvex(a: Point3, b: Point3, c: Point3): boolean {
     const v1 = b.sub(a);
     const v2 = c.sub(b);
-    return orientation2D(a,b,c) === OrientationCase.COUNTER_CLOCK_WISE && vectorLength(crossProduct(v1, v2)) > 0;
+    const cross = vectorLength(crossProduct(v1, v2));
+    return orientation2D(a,b,c) === OrientationCase.COUNTER_CLOCK_WISE && cross > 0;
 }
 
 function isEar(polygon: Point3[], a: Point3, b: Point3, c: Point3): boolean {
@@ -51,40 +52,40 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
 
         PushDebugObjects(name, ...createDebugArrowSegments(polygon), createDebugHighlightPoint(centroidFromPoints(...polygon)));
 
-        if (polygon.length >= 3) {
-            const remainingPolygon = [...polygon]; // copy
+        const remainingPolygon = [...polygon]; // copy
 
-            while (remainingPolygon.length >= 3) {
-                let earFound = false;
+        while (remainingPolygon.length >= 3) {
+            let earFound = false;
 
-                for (let i = 0; i < remainingPolygon.length; i++) {
-                    const prevIndex = (i - 1 + remainingPolygon.length) % remainingPolygon.length;
-                    const nextIndex = (i + 1) % remainingPolygon.length;
+            for (let i = 0; i < remainingPolygon.length; i++) {
+                const prevIndex = (i - 1 + remainingPolygon.length) % remainingPolygon.length;
+                const nextIndex = (i + 1) % remainingPolygon.length;
+                const prev = remainingPolygon[prevIndex];
+                const current = remainingPolygon[i];
+                const next = remainingPolygon[nextIndex];
 
-                    const prev = remainingPolygon[prevIndex];
-                    const current = remainingPolygon[i];
-                    const next = remainingPolygon[nextIndex];
+                if(isEar(remainingPolygon, prev, current, next)) {
+                    const p = [prev, current, next];
 
-                    if(isEar(remainingPolygon, prev, current, next)) {
-                        const p = [prev, current, next];
+                    triangles.push({ points: p });
 
-                        triangles.push({ points: p });
-    
-                        // remove ela
-                        remainingPolygon.splice(i, 1);
+                    // remove ela
+                    remainingPolygon.splice(i, 1);
 
-                        PushDebugObjects(name, createDebugTriangulatedSurface(triangles), createDebugSurface(p), createDebugLine([ ...remainingPolygon, remainingPolygon[0] ], VECTOR3_ZERO, "red", "red"));
+                    PushDebugObjects(name, 
+                        createDebugTriangulatedSurface(triangles), 
+                        createDebugSurface(p), 
+                        ...createDebugArrowSegments(remainingPolygon)
+                    );
 
-                        earFound = true;
-                    }
-                }
-
-                // se nao achou orelha, o algoritmo falha
-                if (!earFound) {
-                    throw new Error("Nenhuma orelha encontrada. Polígono pode ser complexo ou inválido.");
+                    earFound = true;
                 }
             }
 
+            // se nao achou orelha, o algoritmo falha
+            if (!earFound) {
+                throw new Error("Nenhuma orelha encontrada. Polígono pode ser complexo ou inválido.");
+            }
         }
 
         // restore

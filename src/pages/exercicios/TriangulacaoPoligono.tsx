@@ -13,7 +13,7 @@ import * as THREE from "three";
 function InternalRenderingComponent() {
     return (
         <>
-            <TriangulacaoPoligono name="Polígono" minNumberOfPoints={2} maxNumberOfPoints={1000} />
+            <TriangulacaoPoligono name="Polígono" />
         </>
     );
 }

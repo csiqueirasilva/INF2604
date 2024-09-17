@@ -1,6 +1,28 @@
 import { SampleModel } from "@geometry/sampleModel";
+const geometric = require("geometric");
+
+export const createSnakePit = function(segments : number, width: number = 1, incr: number = 2, maxY : number = 10) : number[][] {
+    let ret : number[][] = [];
+    let acc : number[][] = [];
+    for(let i = 0; i < segments; i++) {
+        const x = (width / 2) + (Math.random() * incr)
+        acc.push([ x, ((i / segments) * maxY) - (maxY / 2), 0 ]);
+    }
+    ret.push(...acc);
+    ret.push(...acc.slice(0).reverse().map(p => [ p[0] - width, p[1], 0 ]));
+    return ret;
+}
 
 export const SAMPLE_POLYGONS: SampleModel[] = [
+    {
+        points: createSnakePit(50, 1, 2),
+        name: "SNAKE PIT",
+        description: "Attempt at replicating a snake like structure"
+    },{
+        points: geometric.polygonRandom(50).map((v : any) => [ v[0], v[1], 0 ]).reverse(),
+        name: "50 side polygon",
+        description: "a 50 side polygon generated with the geometric library"
+    },
     {
         points: [
             [-1, 1, 0],  // Top-left

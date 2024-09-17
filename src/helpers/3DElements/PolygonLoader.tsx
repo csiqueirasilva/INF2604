@@ -18,12 +18,14 @@ export interface PolygonLoaderProps {
     name: string;
     color?: ColorRepresentation;
     children?: (points: Point3[]) => React.ReactNode;
+    initialPoints: Point3[]
 }
 
 const PolygonLoader: React.FC<PolygonLoaderProps> = ({
     name,
     color = undefined,
-    children = undefined
+    children = undefined,
+    initialPoints = []
 }) => {
 
     if (!color) {
@@ -43,7 +45,7 @@ const PolygonLoader: React.FC<PolygonLoaderProps> = ({
     const [importDialogOpen, setImportDialogOpen] = useState(false);
 
     const [usedColor, setUsedColor] = useState<string>(startColor);
-    const [points, setPoints] = useState<Point3[]>([]);
+    const [points, setPoints] = useState<Point3[]>(initialPoints);
 
     const [values, setControls] = useControls(`Polígono ${name}`, () => {
         const ret: any = {}
