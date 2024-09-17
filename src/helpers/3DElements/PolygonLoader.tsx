@@ -12,6 +12,7 @@ import { getRandomColorHex } from "@helpers/RNGUtils";
 import ImportExportPointCloudDialog from "@components/ImportExportPointCloudDialog";
 import { createDebugArrowSegments, createDebugLine } from "@helpers/3DElements/Debug/debugVisualElements";
 import { SAMPLE_POLYGONS } from "@geometry/samplePolygons";
+import { useDebugHelper } from "@helpers/3DElements/Debug/DebugHelper";
 
 export interface PolygonLoaderProps {
     name: string;
@@ -46,6 +47,7 @@ const PolygonLoader: React.FC<PolygonLoaderProps> = ({
 
     const [values, setControls] = useControls(`Polígono ${name}`, () => {
         const ret: any = {}
+        ret['Polygon Outline'] = { value: true };
         ret['Dados da vizualização'] = folder({
             'Export to clipboard': button(async () => {
                 const str = await exportPoints(points);
@@ -75,10 +77,7 @@ const PolygonLoader: React.FC<PolygonLoaderProps> = ({
             {
                 children instanceof Function && children(points)
             }
-            {/* {
-                createDebugArrowSegments(points).map((arrow, idx) => <primitive key={idx} object={arrow} />)
-            } */}
-            <primitive object={createDebugLine(points)} />
+            { values['Polygon Outline'] && points.length > 0 && <primitive object={createDebugLine(points)} /> }
             <Html>
                 <ImportExportPointCloudDialog 
                     options={ctx.sampleOptions}

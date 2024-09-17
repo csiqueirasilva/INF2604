@@ -1,7 +1,65 @@
 import { Point3 } from '@geometry/points';
+import { Triangle } from '@geometry/polygon';
 import { createCircleBorderTexture } from '@helpers/canvas';
 import { Platform } from 'react-native';
 import * as THREE from 'three';
+
+const createTriangleGeometry = (triangle: Triangle) => {
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [
+        triangle.points[0].x, triangle.points[0].y, triangle.points[0].z,
+        triangle.points[1].x, triangle.points[1].y, triangle.points[1].z,
+        triangle.points[2].x, triangle.points[2].y, triangle.points[2].z,
+    ];
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    return geometry;
+};
+
+export const createDebugTriangulatedSurface = (triangles: Triangle[]): THREE.Group => {
+    const group = new THREE.Group();
+
+    triangles.forEach((triangle, idx) => {
+        const geometry = createTriangleGeometry(triangle);
+        const material = getDebugRandomColorBasicMaterial(idx);
+        const mesh = new THREE.Mesh(geometry, material);
+        group.add(mesh);
+    });
+
+    return group;
+};
+
+export const createDebugSurface = (points : Point3[]) : THREE.Mesh => {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(
+        points.flatMap(p => [ p.x, p.y, p.z ]), 3)
+    );
+    const material = getDebugRandomColorBasicMaterial();
+    return new THREE.Mesh(geometry, material);
+};
+
+const DEBUG_COLORS = [
+    0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff,
+    0x800000, 0x008000, 0x000080, 0x808000, 0x800080, 0x008080,
+    0xc0c0c0, 0x808080, 0x9999ff, 0xff9999, 0x99ff99, 0xffff99,
+    0xff66cc, 0xcc99ff, 0xffcc99, 0x66ccff, 0xccff99, 0x99ffcc,
+    0x3399ff, 0x99cc33, 0xff9933, 0xcc3399, 0xff3366, 0x33ccff,
+    0x66ff33, 0x6633ff, 0xff3333, 0x33ffcc, 0xff6633, 0x99cc66,
+    0x3366cc, 0xccff66, 0xff9966, 0x6666ff, 0x9966cc, 0x669999,
+    0x666633, 0x996666, 0xffcc66, 0xcc6699, 0x33cc66, 0x9933ff,
+    0xff6666, 0x99ff66, 0x6699cc, 0x66cc33, 0x999933, 0xcc3366,
+    0xff6699, 0x33ff99, 0x66ff66, 0xcc33ff, 0x336633, 0x663399,
+    0x339933, 0x33cc99, 0xffcc33, 0x339966, 0xcc6633, 0x993366,
+    0x669966, 0x33ff33, 0xccff33, 0x669933, 0xff9933, 0xcc9933,
+    0x336699, 0x663366, 0x33ff66, 0xcc6699, 0x99ff33, 0x66ff99,
+    0x9933cc, 0x66cc66, 0x6699ff, 0x33cccc, 0xcc99cc, 0x3366ff,
+    0x33cc33, 0x669966, 0xcc9933, 0x33cc66, 0xff9966, 0x33ffcc,
+    0xcc3399, 0xff6633, 0x3399ff, 0x99cc66, 0x33ff99, 0xff3333,
+];
+
+export const getDebugRandomColorBasicMaterial = (index: number = Math.floor(Math.random() * DEBUG_COLORS.length)) => {
+    const color = DEBUG_COLORS[index % DEBUG_COLORS.length];
+    return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+};
 
 export function createDebugArrow(
     startPoint: THREE.Vector3 | Point3, 
