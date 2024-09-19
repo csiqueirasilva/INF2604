@@ -4,6 +4,7 @@ import { arePointsCoplanar, centroidFromPoints, distinctPoints, isNoPointInsideT
 import { ClearDebugObject, ClearDebugObjects, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelperExports";
 import { createDebugArrowSegments, createDebugHighlightPoint, createDebugLine, createDebugSurface, createDebugText, createDebugTriangulatedSurface } from "@helpers/3DElements/Debug/debugVisualElements";
 import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
+import { Vector3 } from "three";
 
 export interface Triangle {
     points: Point3[]
@@ -37,6 +38,7 @@ function isEar(polygon: Point3[], a: Point3, b: Point3, c: Point3): boolean {
 
 export function earClippingTriangulation(proposedPolygon: Point3[], name : string = "earClipping"): Triangle[] {
     const triangles: Triangle[] = [];
+    let originalSize = 0;
 
     ClearDebugObject(name);
 
@@ -49,6 +51,8 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
 
         // input deve estar na ordem correta, ou o clipping falhará
         const polygon = rotate;
+
+        originalSize = polygon.length;
 
         PushDebugObjects(name, ...createDebugArrowSegments(polygon), createDebugHighlightPoint(centroidFromPoints(...polygon)));
 
@@ -93,7 +97,7 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
 
     }
 
-    PushDebugObjects(name, createDebugTriangulatedSurface(triangles));
+    PushDebugObjects(name, createDebugTriangulatedSurface(triangles), createDebugText(`${originalSize} vertices (n); ${triangles.length} triangles (n - 2);`, new Vector3(0, 7, 0)));
 
     return triangles;
 }
