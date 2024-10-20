@@ -1,14 +1,11 @@
 import { crossProduct, orientation2D, OrientationCase, vectorLength } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
 import { arePointsCoplanar, centroidFromPoints, distinctPoints, isNoPointInsideTriangle, isPointInsideTriangle, rotatePointsReverseRotation, rotatePointsToZPlane, sortConvexPointsCCW } from "@geometry/topology";
+import { Triangle } from "@geometry/triangle";
 import { ClearDebugObject, ClearDebugObjects, PushDebugObject, PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelperExports";
 import { createDebugArrowSegments, createDebugHighlightPoint, createDebugLine, createDebugSurface, createDebugText, createDebugTriangulatedSurface } from "@helpers/3DElements/Debug/debugVisualElements";
 import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
 import { Vector3 } from "three";
-
-export interface Triangle {
-    points: Point3[]
-}
 
 function isMiddleAngleConvex(a: Point3, b: Point3, c: Point3): boolean {
     const v1 = b.sub(a);
@@ -71,7 +68,7 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
                 if(isEar(remainingPolygon, prev, current, next)) {
                     const p = [prev, current, next];
 
-                    triangles.push({ points: p });
+                    triangles.push(new Triangle([ p[0], p[1], p[2] ]));
 
                     // remove ela
                     remainingPolygon.splice(i, 1);
@@ -93,7 +90,7 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
         }
 
         // restore
-        triangles.forEach(triangle => triangle.points = rotatePointsReverseRotation(triangle.points, rotationMatrix));
+        triangles.forEach(triangle => triangle.points = rotatePointsReverseRotation([ ...triangle.points ], rotationMatrix));
 
     }
 

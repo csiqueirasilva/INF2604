@@ -210,3 +210,27 @@ export function orientation3D(p1: Point3, p2: Point3, p3: Point3, p4: Point3): O
 
     return volume > 0 ? OrientationCase.COUNTER_CLOCK_WISE : OrientationCase.CLOCK_WISE;
 }
+
+// theta(1)
+export function det3x3(matrix: number[][]): number {
+    const a = matrix[0][0], b = matrix[0][1], c = matrix[0][2];
+    const d = matrix[1][0], e = matrix[1][1], f = matrix[1][2];
+    const g = matrix[2][0], h = matrix[2][1], i = matrix[2][2];
+
+    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+}
+
+// theta(1)
+export function isPointPInTriangleABC(a: Point3|undefined|null, b: Point3|undefined|null, c: Point3|undefined|null, p: Point3|undefined|null): boolean {
+    let ret = false;
+    if(a && b && c && p) {
+        const matrix = [
+            [a.x - p.x, a.y - p.y, (a.x * a.x + a.y * a.y) - (p.x * p.x + p.y * p.y)],
+            [b.x - p.x, b.y - p.y, (b.x * b.x + b.y * b.y) - (p.x * p.x + p.y * p.y)],
+            [c.x - p.x, c.y - p.y, (c.x * c.x + c.y * c.y) - (p.x * p.x + p.y * p.y)],
+        ];
+        const determinant = det3x3(matrix);
+        ret = determinant > 0;
+    }
+    return ret;
+}

@@ -4,7 +4,7 @@ import { Object3D, Vector3 } from "three";
 import { ThreeElements, useThree } from "@react-three/fiber"
 import { Html } from "@react-three/drei";
 import { estimateBytesUsed } from "three-stdlib";
-import { DebugHelperObject, IDebugHelperContext, setModuleSetter } from "@helpers/3DElements/Debug/DebugHelperExports";
+import { DebugHelperObject, getDebugConfig, IDebugHelperContext, setModuleSetter } from "@helpers/3DElements/Debug/DebugHelperExports";
 
 interface Props {
     children: React.ReactNode[] | React.ReactNode | undefined
@@ -30,9 +30,10 @@ export default function DebugHelper(props: Props) {
                     setPlayingDic({ ...playingDic, [name]: false });
                 }
             });
+            const cfg = getDebugConfig(name);
             fold[`${name}-debugSpeed`] = { min: 100, max: 2000, value: 1000, step: 100 };
-            fold[`${name}-debugSteps`] = { min: 0, max: obj.objects.length, value: 0, step: 1 };
-            fold[`${name}-debugVisible`] = { value: true };
+            fold[`${name}-debugSteps`] = { min: cfg.minStep || 0, max: cfg.maxStep || obj.objects.length, value: 0, step: 1 };
+            fold[`${name}-debugVisible`] = { value: cfg.debugVisible !== null ? cfg.debugVisible : true };
             fold[`${name}-showName`] = { value: false };
             ret[name] = folder(fold)
         })

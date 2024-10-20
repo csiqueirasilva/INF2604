@@ -18,13 +18,14 @@ export function createCircleTexture(color: ColorRepresentation) {
     return canvas;
 }
 
-export function createCircleBorderTexture(color: ColorRepresentation, size: number = 128, lineWidth : number = 4) {
+export function createCircleBorderTexture(color: ColorRepresentation, size: number = 128, lineWidth : number = 4, pixelRatio : number = 4) {
     const canvas = document.createElement('canvas');
-    canvas.width = size + (lineWidth * 2);
-    canvas.height = size + (lineWidth * 2);
+    canvas.width = (size + (lineWidth * 2)) * pixelRatio;
+    canvas.height = (size + (lineWidth * 2)) * pixelRatio;
 
     const context = canvas.getContext('2d');
     if (context) {
+        context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         const radius = (size / 2);
         context.strokeStyle = new Color(color).getStyle();
         context.lineWidth = lineWidth;

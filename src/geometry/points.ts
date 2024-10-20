@@ -20,6 +20,11 @@ export class Point3 {
     public equals(p: Point3): boolean {
         return this.x === p.x && this.y === p.y && this.z === p.z;
     }
+    public set(p : Point3) : void {
+        this.x = p.x;
+        this.y = p.y;
+        this.z = p.z;
+    }
     // theta(1)
     public sub(p : Point3) : Vector3 {
         return this.toVector3().sub(p)
@@ -39,8 +44,8 @@ export class Point3 {
         return v.lengthSq();
     }
     // theta(1)
-    public medianPointTo(p : Point3) : Point3 {
-        return Point3.fromVector3(this.toVector3().add(p.toVector3().sub(this).multiplyScalar(0.5)));
+    public medianPointTo(p : Point3, median : number = 0.5) : Point3 {
+        return Point3.fromVector3(this.toVector3().add(p.toVector3().sub(this).multiplyScalar(median)));
     }
     // helper
     public cross(other: Point3): Point3 {

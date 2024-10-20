@@ -1,7 +1,7 @@
 import { calcCircumcircle, calcCircumsphere, calcDiameter, minSphere } from "@geometry/minsphere";
 import { Point3 } from "@geometry/points";
 import { arePointsCollinear, arePointsCoplanar, boundingSphereInCloud, findClosestPoints, findExtremePoints, findFarthestPoints, PolarReference, quickHull, sortConvexPointsCCW } from "@geometry/topology";
-import { earClippingTriangulation, Triangle } from "@geometry/polygon";
+import { earClippingTriangulation } from "@geometry/polygon";
 import { useDebugHelper } from "@helpers/3DElements/Debug/DebugHelper";
 import PolygonLoader, { PolygonLoaderProps } from "@helpers/3DElements/PolygonLoader";
 import RNGRenderPointCloud, { RenderPointCloudProps } from "@helpers/3DElements/RNGRenderPointCloud";
@@ -16,6 +16,7 @@ import { createDebugTriangulatedSurface } from "@helpers/3DElements/Debug/debugV
 import { createSnakePit } from "@geometry/samplePolygons";
 import { importPointsFromMatrix } from "@helpers/export";
 import { useFocusEffect } from "expo-router";
+import { Triangle } from "@geometry/triangle";
 
 function InternalComponent({ points } : { points : Point3[] }) {
     

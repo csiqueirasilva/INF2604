@@ -9,9 +9,11 @@ import GrandezasProdutoVetorial from "@pages/conceitos-basicos/GrandezasProdutoV
 import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores";
 import GrandezasSubtracaoDeVetores from "@pages/conceitos-basicos/GrandezasSubtracaoDeVetores";
 import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
+import DiagramaVoronoiScreen from "@pages/exercicios/DiagramaVoronoi";
 import FechoConvexoScreen from "@pages/exercicios/FechoConvexoScreen";
 import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
+import TriangulacaoDelaunayScreen from "@pages/exercicios/TriangulacaoDelaunay";
 import TriangulacaoPoligonoScreen from "@pages/exercicios/TriangulacaoPoligono";
 
 interface RouteEntry {
@@ -72,6 +74,16 @@ const routesHelper: RouteSection[] = [{
             component: TriangulacaoPoligonoScreen,
             title: 'Triangulação de polígono',
             url: '/exercicios/triangulacao-poligono'
+        },
+        {
+            component: TriangulacaoDelaunayScreen,
+            title: 'Triangulação Delaunay',
+            url: '/exercicios/triangulacao-delaunay'
+        },
+        {
+            component: DiagramaVoronoiScreen,
+            title: 'Diagrama Voronoi',
+            url: '/exercicios/diagrama-voronoi'
         }
     ]
 },

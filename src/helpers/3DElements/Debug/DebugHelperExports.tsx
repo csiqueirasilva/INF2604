@@ -6,6 +6,26 @@ export interface DebugHelperObject {
     id: string
 }
 
+export class DebugHelperConfiguration {
+    maxStep?: number|null|undefined = null;
+    minStep?: number|null|undefined = null;
+    debugVisible?: boolean|null|undefined = null;
+}
+
+let configs : Map<string, DebugHelperConfiguration> = new Map<string, DebugHelperConfiguration>();
+
+export function getDebugConfig(id : string) : DebugHelperConfiguration {
+    let config = configs.get(id);
+    if(!config) {
+        config = new DebugHelperConfiguration();
+    }
+    return config;
+}
+
+export function addDebugConfig(id : string, config : DebugHelperConfiguration) {
+    configs.set(id, config);
+}
+
 let moduleSetter: React.Dispatch<React.SetStateAction<DebugHelperObject[]>> | undefined = undefined;
 
 export function setModuleSetter(fn : React.Dispatch<React.SetStateAction<DebugHelperObject[]>> | undefined) {

@@ -18,14 +18,16 @@ export interface PolygonLoaderProps {
     name: string;
     color?: ColorRepresentation;
     children?: (points: Point3[]) => React.ReactNode;
-    initialPoints?: Point3[]
+    initialPoints?: Point3[],
+    startVisible?: boolean
 }
 
 const PolygonLoader: React.FC<PolygonLoaderProps> = ({
     name,
     color = undefined,
     children = undefined,
-    initialPoints = []
+    initialPoints = [],
+    startVisible = true
 }) => {
 
     if (!color) {
@@ -49,7 +51,7 @@ const PolygonLoader: React.FC<PolygonLoaderProps> = ({
 
     const [values, setControls] = useControls(`Polígono ${name}`, () => {
         const ret: any = {}
-        ret['Polygon Outline'] = { value: true };
+        ret[`Polygon Outline-${name}`] = { value: startVisible };
         ret['Dados da vizualização'] = folder({
             'Export to clipboard': button(async () => {
                 const str = await exportPoints(points);
@@ -79,7 +81,7 @@ const PolygonLoader: React.FC<PolygonLoaderProps> = ({
             {
                 children instanceof Function && children(points)
             }
-            { values['Polygon Outline'] && points.length > 0 && <primitive object={createDebugLine(points)} /> }
+            { values[`Polygon Outline-${name}`] && points.length > 0 && <primitive object={createDebugLine(points)} /> }
             <Html>
                 <ImportExportPointCloudDialog 
                     options={ctx.sampleOptions}

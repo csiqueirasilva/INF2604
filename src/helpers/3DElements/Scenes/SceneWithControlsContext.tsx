@@ -6,7 +6,9 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { Vector3 } from "three";
 import { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-export const CAMERA_INITIAL_POSITION = new Vector3( 0, 0, 40 );
+export const CAMERA_INITIAL_POSITION = new Vector3( 2.5, 0, 40 );
+export const CAMERA_FIXED_LOOK_AT = new Vector3( 2.5, 0, 0 );
+export const CAMERA_INITIAL_ZOOM = 80;
 
 export enum VIEW_TYPE {
     ORBIT_CONTROLS = "Orbit controls",
@@ -44,14 +46,17 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
     const setupCameraInitialPosition = useCallback(() => {
         if(camera) {
             camera.position.copy(CAMERA_INITIAL_POSITION);
-            camera.lookAt(0, 0, 0);
+            camera.lookAt(CAMERA_FIXED_LOOK_AT.x, CAMERA_FIXED_LOOK_AT.y, CAMERA_FIXED_LOOK_AT.z);
+            camera.zoom = CAMERA_INITIAL_ZOOM;
+            camera.updateProjectionMatrix();
         }
     }, [ camera ]);
 
     useFrame(() => {
         if (orbitControlsRef.current?.enabled === false) {
             setupCameraInitialPosition();
-            orbitControlsRef.current.target.set(0, 0, 0);
+            orbitControlsRef.current.target.copy(CAMERA_FIXED_LOOK_AT);
+            orbitControlsRef.current.update();
         }
     })
 
