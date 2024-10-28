@@ -1,14 +1,15 @@
 import { det3x3, dotProduct, isPointPInTriangleABC, ordering2D, vectorLength } from "@geometry/affine";
 import { DualGraph, DualGraphNode, HalfEdgeForDualGraph } from "@geometry/dualgraph";
+import { pseudoAngleAsSquarePerimeter } from "@geometry/euler";
 import { calcCircumcircle } from "@geometry/minsphere";
 import { Point3 } from "@geometry/points";
 import { earClippingTriangulation } from "@geometry/polygon";
-import { centroidFromPoints } from "@geometry/topology";
+import { centroidFromPoints, quickHull } from "@geometry/topology";
 import { PolygonEdge, Triangle } from "@geometry/triangle";
 import { PushDebugObjects } from "@helpers/3DElements/Debug/DebugHelperExports";
 import { createDebugArrow, createDebugCircle, createDebugDualGraphForTriangles, createDebugHalfEdge, createDebugHighlightPoint, createDebugLine, createDebugPointCloud, createDebugSphere, createDebugText, createDebugTriangulatedSurface } from "@helpers/3DElements/Debug/debugVisualElements";
 import { VECTOR3_ZERO } from "@helpers/ThreeUtils";
-import { ArrowHelper, FrontSide, Vector3 } from "three";
+import { ArrowHelper, FrontSide, Vector2, Vector3 } from "three";
 
 export function calculateAngle(v1: Vector3, v2: Vector3): number {
     const dotProd = dotProduct(v1, v2);

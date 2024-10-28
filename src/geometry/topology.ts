@@ -211,6 +211,33 @@ export function distanceFromLine(point: Point3, a: Point3, b: Point3): number {
     return Math.abs(A * point.x + B * point.y + C) / Math.sqrt(A * A + B * B);
 }
 
+// src: https://lexrent.eu/wp-content/uploads/torza/artikel_groep_sub_2_docs/BYZ_3_Polygon-Area-and-Centroid.pdf
+export function calculateCentroidZeroZ(vertices: Point3[]): Point3 {
+    let centroidX = 0;
+    let centroidY = 0;
+    let signedArea = 0;
+  
+    const n = vertices.length;
+  
+    for (let i = 0; i < n; i++) {
+      const x0 = vertices[i].x;
+      const y0 = vertices[i].y;
+      const x1 = vertices[(i + 1) % n].x;
+      const y1 = vertices[(i + 1) % n].y;
+  
+      const a = x0 * y1 - x1 * y0;
+      signedArea += a;
+      centroidX += (x0 + x1) * a;
+      centroidY += (y0 + y1) * a;
+    }
+  
+    signedArea *= 0.5;
+    centroidX /= 6 * signedArea;
+    centroidY /= 6 * signedArea;
+  
+    return new Point3(centroidX, centroidY, 0);
+}
+
 export function centroidFromPoints(...points: Point3[]): Point3 {
     const centroid = new Point3(0, 0, 0);
 

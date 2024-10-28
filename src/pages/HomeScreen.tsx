@@ -10,9 +10,12 @@ import GrandezasSomaVetores from "@pages/conceitos-basicos/GrandezasSomaVetores"
 import GrandezasSubtracaoDeVetores from "@pages/conceitos-basicos/GrandezasSubtracaoDeVetores";
 import CirculoMinimo from "@pages/exercicios/CirculoMinimo";
 import DiagramaVoronoiScreen from "@pages/exercicios/DiagramaVoronoi";
+import DiagramaVoronoi2dScreen from "@pages/exercicios/DiagramaVoronoi2d";
 import FechoConvexoScreen from "@pages/exercicios/FechoConvexoScreen";
 import NuvemDePontosAleatoria from "@pages/exercicios/NuvemDePontosAleatoria";
 import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
+import ProjetorBilinear from "@pages/exercicios/ProjetorBilinear";
+import RepresentacaoMalhaTriangulos from "@pages/exercicios/RepresentacaoMalhaTriangulos";
 import TriangulacaoDelaunayScreen from "@pages/exercicios/TriangulacaoDelaunay";
 import TriangulacaoPoligonoScreen from "@pages/exercicios/TriangulacaoPoligono";
 
@@ -76,14 +79,14 @@ const routesHelper: RouteSection[] = [{
             url: '/exercicios/triangulacao-poligono'
         },
         {
-            component: TriangulacaoDelaunayScreen,
-            title: 'Triangulação Delaunay',
-            url: '/exercicios/triangulacao-delaunay'
+            component: RepresentacaoMalhaTriangulos,
+            title: 'Representação malha de triângulos (Grafo dual)',
+            url: '/exercicios/representacao-malha-triangulos'
         },
         {
-            component: DiagramaVoronoiScreen,
-            title: 'Diagrama Voronoi',
-            url: '/exercicios/diagrama-voronoi'
+            component: ProjetorBilinear,
+            title: 'Projetor bilinear (Malha de quadriláteros)',
+            url: '/exercicios/projetor-bilinear-quadrilateros'
         }
     ]
 },
@@ -94,7 +97,22 @@ const routesHelper: RouteSection[] = [{
             component: FechoConvexoScreen,
             title: 'Fecho convexo',
             url: '/trabalhos/fecho-convexo'
-        }
+        },
+        // {
+        //     component: TriangulacaoDelaunayScreen,
+        //     title: 'Triangulação Delaunay',
+        //     url: '/exercicios/triangulacao-delaunay'
+        // },
+        // {
+        //     component: DiagramaVoronoiScreen,
+        //     title: 'Diagrama Voronoi (Cones)',
+        //     url: '/exercicios/diagrama-voronoi-cones'
+        // },
+        // {
+        //     component: DiagramaVoronoi2dScreen,
+        //     title: 'Diagrama Voronoi (2d)',
+        //     url: '/exercicios/diagrama-voronoi-2d'
+        // }
     ]
 }]
 

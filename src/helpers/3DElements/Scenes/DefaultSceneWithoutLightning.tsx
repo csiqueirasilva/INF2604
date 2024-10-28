@@ -91,8 +91,8 @@ export default function DefaultSceneWithoutLightning(props: Props) {
                         makeDefault
                         position={CAMERA_INITIAL_POSITION}
                         zoom={50}
-                        near={-1000}
-                        far={1000}
+                        near={-10000}
+                        far={10000}
                     />
                 <InternalComponent {...props} />
             </SceneWithControlsProvider>

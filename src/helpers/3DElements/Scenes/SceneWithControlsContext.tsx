@@ -24,6 +24,12 @@ export interface ISceneWithControlsContext {
     viewType: VIEW_TYPE
     sampleOptions: SampleModel[]
     setSampleOptions: React.Dispatch<React.SetStateAction<SampleModel[]>>
+    cameraInitialPosition : Vector3,
+    setCameraInitialPosition: React.Dispatch<React.SetStateAction<Vector3>>
+    cameraFixedLookAt : Vector3,
+    setCameraFixedLookAt: React.Dispatch<React.SetStateAction<Vector3>>
+    cameraInitialZoom : number,
+    setCameraInitialZoom: React.Dispatch<React.SetStateAction<number>>
 }
 
 export function SceneWithControlsProvider({ children } : { children : ReactNode }) {
@@ -33,6 +39,9 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
     const orbitControlsRef = useRef<OrbitControlsImpl | null>(null);
     const { camera } = useThree();
     const [ errorMsg, setErrorMsg ] = useState<string|undefined>(undefined);
+    const [ cameraInitialPosition, setCameraInitialPosition ] = useState<Vector3>(CAMERA_INITIAL_POSITION);
+    const [ cameraFixedLookAt, setCameraFixedLookAt ] = useState<Vector3>(CAMERA_FIXED_LOOK_AT);
+    const [ cameraInitialZoom, setCameraInitialZoom ] = useState<number>(CAMERA_INITIAL_ZOOM);
 
     const [values, setControls] = useControls(`Cena`, () => {
         const ret: any = {}
@@ -45,17 +54,17 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
 
     const setupCameraInitialPosition = useCallback(() => {
         if(camera) {
-            camera.position.copy(CAMERA_INITIAL_POSITION);
-            camera.lookAt(CAMERA_FIXED_LOOK_AT.x, CAMERA_FIXED_LOOK_AT.y, CAMERA_FIXED_LOOK_AT.z);
-            camera.zoom = CAMERA_INITIAL_ZOOM;
+            camera.position.copy(cameraInitialPosition);
+            camera.lookAt(cameraFixedLookAt.x, cameraFixedLookAt.y, cameraFixedLookAt.z);
+            camera.zoom = cameraInitialZoom;
             camera.updateProjectionMatrix();
         }
-    }, [ camera ]);
+    }, [ camera, cameraInitialPosition, cameraFixedLookAt, cameraInitialZoom ]);
 
     useFrame(() => {
         if (orbitControlsRef.current?.enabled === false) {
             setupCameraInitialPosition();
-            orbitControlsRef.current.target.copy(CAMERA_FIXED_LOOK_AT);
+            orbitControlsRef.current.target.copy(cameraFixedLookAt);
             orbitControlsRef.current.update();
         }
     })
@@ -78,7 +87,10 @@ export function SceneWithControlsProvider({ children } : { children : ReactNode 
         setErrorMsg,
         errorMsg,
         setSampleOptions,
-        sampleOptions
+        sampleOptions,
+        cameraInitialPosition, setCameraInitialPosition,
+        cameraFixedLookAt, setCameraFixedLookAt,
+        cameraInitialZoom, setCameraInitialZoom
     };
 
     return (

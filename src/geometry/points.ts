@@ -79,6 +79,16 @@ export class Point3 {
     }
     static fromVector3 = (v : Vector3) : Point3 => new Point3(v.x, v.y, v.z)
     public toString = (precision = 2) : string => `(${this.x.toFixed(precision)},${this.y.toFixed(precision)},${this.z.toFixed(precision)})`
+    static lerp(p0: Point3, p1: Point3, t: number): Point3 {
+        if(t < 0 || t > 1) {
+            throw new Error("Parameter t outside range 0 to 1 (inclusives)");
+        }
+        return new Point3(
+          p0.x + (p1.x - p0.x) * t,
+          p0.y + (p1.y - p0.y) * t,
+          p0.z + (p1.z - p0.z) * t
+        );
+    }
 }
 
 export enum PointGenerationType {

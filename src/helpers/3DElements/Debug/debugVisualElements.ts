@@ -42,11 +42,62 @@ export function createDebugHalfEdge<T extends DualGraphNode<PolygonShape>>(he : 
     return group;
 }
 
+export function createDebugDualGraphForTrianglesTraversalOrdered(
+    graph: DualGraph<Triangle>
+): THREE.Group {
+    const group = new THREE.Group();
+
+     const nodes = graph.getTraversalOrdered();
+
+    let triangles = createDebugTriangulatedSurface(graph.shapes);
+    group.add(triangles);
+
+    if(nodes.length > 0) {
+
+        let lastNode = nodes[0];
+        let otherNodes = nodes.slice(1);
+
+        for(const node of otherNodes) {
+            if(!node.shape.sharesEdgeWith(lastNode.shape)) {
+                let idx = Infinity;
+                let checkNode1 = node.firstHalfEdge.twin?.node;
+                if(checkNode1) {
+                    let idx1 = nodes.indexOf(checkNode1);
+                    if(idx1 !== -1 && idx > idx1) {
+                        idx = idx1;
+                    }
+                }
+                let checkNode2 = node.firstHalfEdge.next?.twin?.node;
+                if(checkNode2) {
+                    let idx2 = nodes.indexOf(checkNode2);
+                    if(idx2 !== -1 && idx > idx2) {
+                        idx = idx2;
+                    }
+                }
+                let checkNode3 = node.firstHalfEdge.next?.next?.twin?.node;
+                if(checkNode3) {
+                    let idx3 = nodes.indexOf(checkNode3);
+                    if(idx3 !== -1 && idx > idx3) {
+                        idx = idx3;
+                    }
+                }
+                lastNode = nodes[idx];
+            }
+            group.add(createDebugArrow(lastNode.center, node.center));
+            lastNode = node;        
+        }
+
+    }
+
+    return group;
+}
+
 export function createDebugDualGraphForTriangles(
     graph: DualGraph<Triangle>,
     printEdgeLabels : boolean = true,
     printFaceIdLabels : boolean = true,
-    printHalfEdges : boolean = true
+    printHalfEdges : boolean = true,
+    nodeFontSize: number = 6
 ): THREE.Group {
     const group = new THREE.Group();
 
@@ -59,10 +110,8 @@ export function createDebugDualGraphForTriangles(
     function recHelper(node : DualGraphNode<Triangle>) {
         visited.push(node);
 
-        let p1 = node.center;
-
         if(printFaceIdLabels) {
-            let textNode = createDebugText(`${node.shape.id}`, node.center.toVector3(), 6, "#000", "#FFF");
+            let textNode = createDebugText(`${node.shape.id}`, node.center.toVector3(), nodeFontSize, "#000", "#FFF");
             group.add(textNode);
         }
 

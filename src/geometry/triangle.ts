@@ -1,4 +1,6 @@
+import { calcCircumcircle } from "@geometry/minsphere";
 import { Point3 } from "@geometry/points";
+import { PolarReference } from "@geometry/topology";
 
 export class PolygonEdge {
     public start : Point3 = new Point3()
@@ -71,5 +73,10 @@ export class Triangle extends PolygonShape {
             new PolygonEdge(this.points[1], this.points[2]),
             new PolygonEdge(this.points[2], this.points[0])
         ];
+    }
+
+    public calcCircumcircle() : PolarReference {
+        let calc = calcCircumcircle(this.points[0], this.points[1], this.points[2]);
+        return calc;
     }
 }
