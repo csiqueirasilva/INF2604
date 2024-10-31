@@ -17,6 +17,7 @@ import PontosMaisProximos from "@pages/exercicios/PontosMaisProximos";
 import ProjetorBilinear from "@pages/exercicios/ProjetorBilinear";
 import RepresentacaoMalhaTriangulos from "@pages/exercicios/RepresentacaoMalhaTriangulos";
 import TriangulacaoDelaunayScreen from "@pages/exercicios/TriangulacaoDelaunay";
+import TriangulacaoDelaunayScreenConvexo from "@pages/exercicios/TriangulacaoDelaunayConvexo";
 import TriangulacaoPoligonoScreen from "@pages/exercicios/TriangulacaoPoligono";
 
 interface RouteEntry {
@@ -98,21 +99,26 @@ const routesHelper: RouteSection[] = [{
             title: 'Fecho convexo',
             url: '/trabalhos/fecho-convexo'
         },
-        // {
-        //     component: TriangulacaoDelaunayScreen,
-        //     title: 'Triangulação Delaunay',
-        //     url: '/exercicios/triangulacao-delaunay'
-        // },
-        // {
-        //     component: DiagramaVoronoiScreen,
-        //     title: 'Diagrama Voronoi (Cones)',
-        //     url: '/exercicios/diagrama-voronoi-cones'
-        // },
-        // {
-        //     component: DiagramaVoronoi2dScreen,
-        //     title: 'Diagrama Voronoi (2d)',
-        //     url: '/exercicios/diagrama-voronoi-2d'
-        // }
+        {
+            component: TriangulacaoDelaunayScreen,
+            title: 'Triangulação Delaunay',
+            url: '/trabalhos/triangulacao-delaunay'
+        },
+        {
+            component: TriangulacaoDelaunayScreenConvexo,
+            title: 'Triangulação Delaunay (convexo)',
+            url: '/trabalhos/triangulacao-delaunay-convexo'
+        },
+        {
+            component: DiagramaVoronoiScreen,
+            title: 'Diagrama Voronoi',
+            url: '/trabalhos/diagrama-voronoi'
+        },
+        {
+            component: DiagramaVoronoi2dScreen,
+            title: 'Diagrama Voronoi (Relaxamento)',
+            url: '/trabalhos/diagrama-voronoi-relaxamento'
+        }
     ]
 }]
 

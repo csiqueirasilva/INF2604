@@ -22,7 +22,7 @@ export default function TriangulacaoDelaunayScreen() {
 
     return (
         <>
-            <HeaderWithBackButton title="Exercícios - Triangulação Delaunay" />
+            <HeaderWithBackButton title="Trabalhos - Triangulação Delaunay" />
             <DefaultSceneWithoutLightning>
                 <InternalRenderingComponent />
             </DefaultSceneWithoutLightning>

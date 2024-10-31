@@ -223,14 +223,15 @@ export function det3x3(matrix: number[][]): number {
 // theta(1)
 export function isPointPInTriangleABC(a: Point3|undefined|null, b: Point3|undefined|null, c: Point3|undefined|null, p: Point3|undefined|null): boolean {
     let ret = false;
-    if(a && b && c && p) {
+    if(a && b && c && p && !arePointsCollinear([ a, b, c ])) {
         const matrix = [
             [a.x - p.x, a.y - p.y, (a.x * a.x + a.y * a.y) - (p.x * p.x + p.y * p.y)],
             [b.x - p.x, b.y - p.y, (b.x * b.x + b.y * b.y) - (p.x * p.x + p.y * p.y)],
             [c.x - p.x, c.y - p.y, (c.x * c.x + c.y * c.y) - (p.x * p.x + p.y * p.y)],
         ];
         const determinant = det3x3(matrix);
-        ret = determinant > 0;
+        const epsilon = 1E-10;
+        ret = determinant > epsilon;
     }
     return ret;
 }

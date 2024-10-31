@@ -9,9 +9,22 @@ export class PolygonEdge {
         return (other.start.equals(this.start) && other.end.equals(this.end)) || 
         (other.start.equals(this.end) && other.end.equals(this.start));
     }
+    public equals (other : PolygonEdge) : boolean {
+        return this.isEqual(other);
+    }
     constructor(start: Point3 = new Point3(), end: Point3 = new Point3()) {
         this.start = start;
         this.end = end;
+    }
+    public connectsTo (possibility : Point3) : Point3|null {
+        let ret : Point3|null = null;
+        if(this.start.equals(possibility)) {
+            ret = this.end;
+        }
+        if(this.end.equals(possibility)) {
+            ret = this.start;
+        }
+        return ret;
     }
 }
 

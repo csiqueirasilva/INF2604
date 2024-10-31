@@ -24,6 +24,42 @@ export class HalfEdge<T extends DualGraphNode<PolygonShape>> {
         }
         return ret;
     }
+
+    public findNextWithout(...notToBePoints : Point3[]) : HalfEdge<T> {
+        let ref : HalfEdge<T> = this;
+        let found : HalfEdge<T> = this;
+        do {
+            if(ref && !notToBePoints.some(p => p.equals(ref!.vertex))) {
+                found = ref;
+                break;
+            }
+            if(!ref.next) {
+                console.warn(`Error: no next halfedge detected! The shape is wrong...`);
+                break;
+            }
+            ref = ref.next; 
+        } while (ref !== this);
+    
+        return found;
+    }
+
+    public findNextWith(...toBePoints : Point3[]) : HalfEdge<T> {
+        let ref : HalfEdge<T> = this;
+        let found : HalfEdge<T> = this;
+        do {
+            if(ref && toBePoints.some(p => p.equals(ref!.vertex))) {
+                found = ref;
+                break;
+            }
+            if(!ref.next) {
+                console.warn(`Error: no next halfedge detected! The shape is wrong...`);
+                break;
+            }
+            ref = ref.next; 
+        } while (ref !== this);
+    
+        return found;
+    }
 }
 
 export class HalfEdgeForDualGraph<T extends PolygonShape> extends HalfEdge<DualGraphNode<T>> {
@@ -105,7 +141,7 @@ export class DualGraphNode<T extends PolygonShape> {
         }
     }
 
-    private getHalfEdges(): HalfEdgeForDualGraph<T>[] {
+    public getHalfEdges(): HalfEdgeForDualGraph<T>[] {
         const edges: HalfEdgeForDualGraph<T>[] = [];
         let edge : HalfEdgeForDualGraph<T> | null = this.firstHalfEdge;
 
@@ -119,6 +155,15 @@ export class DualGraphNode<T extends PolygonShape> {
         return edges;
     }
 
+    public findHalfEdgeWithVertex(p : Point3) : HalfEdgeForDualGraph<T> {
+        const hes = this.getHalfEdges();
+        const he = hes.find(x => x.vertex.equals(p));
+        if(!he) {
+            throw new Error(`Half-edge for point ${p.toString()} not found`);
+        }
+        return he;
+    }
+
 }
 
 export class DualGraph<T extends PolygonShape> {
@@ -127,16 +172,8 @@ export class DualGraph<T extends PolygonShape> {
 
     constructor(shapes : T[]) {
         for(const t of shapes) {
-            const node = new DualGraphNode<T>(this, t);
-            let i = 0;
-            for(const n of this.nodes) {
-                if(n.connect(node) && ++i >= 3) {
-                    break;
-                }
-            }
-            this.nodes.push(node);
+            this.addShape(t);
         }
-        this.shapes = shapes;
     }
 
     public getShapes() : PolygonShape[] {
@@ -161,6 +198,47 @@ export class DualGraph<T extends PolygonShape> {
             recHelper(nodes[0]);
         }
         return visited;
+    }
+
+    public addShape(shape : T) : DualGraphNode<T> {
+        const node = new DualGraphNode<T>(this, shape);
+        let i = 0;
+        let edges = shape.getEdges();
+        for(const n of this.nodes) {
+            if(n.connect(node) && ++i >= edges.length) {
+                break;
+            }
+        }
+        this.nodes.push(node);
+        this.shapes.push(shape);
+        return node;
+    }
+
+    public removeShape(shape : T) {
+        const shapeIdx = this.shapes.indexOf(shape);
+        if(shapeIdx !== -1) {
+            const node = this.nodes.find(node => node.shape === shape);
+            if(node) {
+                const nodeIdx = this.nodes.indexOf(node);
+                let edge : HalfEdgeForDualGraph<T> | null = node.firstHalfEdge;
+                do {
+                    if(edge.twin) {
+                        edge.twin.twin = null;
+                    }
+                    edge = edge.next;
+                } while (edge && edge !== node.firstHalfEdge);
+                this.nodes.splice(nodeIdx, 1);
+                this.shapes.splice(shapeIdx, 1);
+            }
+        }
+    }
+
+    public findNodeByShape(shape : T) : DualGraphNode<T> {
+        let ret = this.nodes.find(n => n.shape === shape);
+        if(!ret) {
+            throw new Error(`Shape ${shape.id} not found in graph`);
+        }
+        return ret;
     }
 
 }

@@ -1,6 +1,7 @@
 import { DualGraph, DualGraphNode, HalfEdge, HalfEdgeForDualGraph } from '@geometry/dualgraph';
 import { Point3 } from '@geometry/points';
 import { PolygonShape, Triangle } from '@geometry/triangle';
+import { VoronoiDiagram } from '@geometry/voronoi';
 import { PushDebugObject } from '@helpers/3DElements/Debug/DebugHelperExports';
 import { createCircleBorderTexture } from '@helpers/canvas';
 import { Platform } from 'react-native';
@@ -172,7 +173,7 @@ export const createDebugSurface = (points : Point3[]) : THREE.Mesh => {
     return new THREE.Mesh(geometry, material);
 };
 
-const DEBUG_COLORS = [
+export const DEBUG_COLORS = [
     0xffff00, 0xff00ff, 0x00ffff,
     0x808000, 0x800080, 0x008080,
     0xc0c0c0, 0x808080, 0x9999ff, 0xff9999, 0x99ff99, 0xffff99,

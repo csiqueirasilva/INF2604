@@ -1,3 +1,4 @@
+import { arePointsCollinear } from "@geometry/topology";
 import { Vector3 } from "three";
 
 export const TOLERANCE_EPSILON: number = 1e-14;
@@ -88,6 +89,16 @@ export class Point3 {
           p0.y + (p1.y - p0.y) * t,
           p0.z + (p1.z - p0.z) * t
         );
+    }
+    public isBetween = (a: Point3, b: Point3): boolean => {
+        if(!arePointsCollinear([ this, a, b ])) {
+            return false;
+        }
+
+        const withinXBounds = Math.min(a.x, b.x) <= this.x && this.x <= Math.max(a.x, b.x);
+        const withinYBounds = Math.min(a.y, b.y) <= this.y && this.y <= Math.max(a.y, b.y);
+    
+        return withinXBounds && withinYBounds;
     }
 }
 

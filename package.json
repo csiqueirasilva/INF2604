@@ -44,6 +44,7 @@
     "expo-web-browser": "~13.0.3",
     "geometric": "^2.5.4",
     "leva": "^0.9.35",
+    "liang-barsky": "^1.0.12",
     "nativewind": "^4.0.1",
     "pako": "^2.1.0",
     "react": "18.2.0",

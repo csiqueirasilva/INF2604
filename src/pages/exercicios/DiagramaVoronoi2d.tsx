@@ -24,7 +24,7 @@ export default function DiagramaVoronoi2dScreen() {
 
     return (
         <>
-            <HeaderWithBackButton title="Exercícios - Diagrama Voronoi (2d)" />
+            <HeaderWithBackButton title="Exercícios - Diagrama Voronoi (Relaxamento)" />
             <DefaultSceneWithoutLightning>
                 <InternalRenderingComponent />
             </DefaultSceneWithoutLightning>

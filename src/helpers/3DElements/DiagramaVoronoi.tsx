@@ -3,48 +3,77 @@ import { useDebugHelper } from "@helpers/3DElements/Debug/DebugHelper";
 import PolygonLoader, { PolygonLoaderProps } from "@helpers/3DElements/PolygonLoader";
 import { useSceneWithControlsContext } from "@helpers/3DElements/Scenes/SceneWithControlsContext";
 import { folder, useControls } from "leva";
-import { useEffect, useState } from "react";
-import { createDebugTriangulatedSurface } from "@helpers/3DElements/Debug/debugVisualElements";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Group, CanvasTexture, Mesh, PlaneGeometry, MeshBasicMaterial } from "three";
 import { createSnakePit, SAMPLE_POLYGONS } from "@geometry/samplePolygons";
 import { importPointsFromMatrix } from "@helpers/export";
-import { delaunayTriangulation } from "@geometry/delaunay";
-import { Triangle } from "@geometry/triangle";
-import { voronoiWithCones } from "@geometry/voronoi";
-import { Group } from "three";
+import { buildVoronoiConesWithSeeds, generateVoronoiTexture, VoronoiCell, voronoiDiagramFromDelaunay, voronoiWithCones } from "@geometry/voronoi";
 import { addDebugConfig } from "@helpers/3DElements/Debug/DebugHelperExports";
+import { multiplyPointByScalar } from "@geometry/affine";
+import { Html } from "@react-three/drei";
+import { createPortal } from "react-dom";
+import { useWindowDimensions } from "react-native";
 
 function InternalComponentDelaunay({ points } : { points : Point3[] }) {
-    
-    const ctx = useSceneWithControlsContext();
     const debugHelper = useDebugHelper();
-    const [ voronoi, setVoronoi ] = useState<Group>(new Group());
+    const containerRef = useRef<HTMLDivElement>(null);
+    const topMargin = 60;
+    const dims = useWindowDimensions();
+    const width = dims.width;
+    const height = dims.height - topMargin;
+    const [ cones, setCones ] = useState<Group>(new Group());
 
     useEffect(() => {
         try {
-            let t = voronoiWithCones(points);
-            setVoronoi(t);
+            const t = voronoiDiagramFromDelaunay(points);
+            const generatedTexture = generateVoronoiTexture(t, width, height, true, false);
+            containerRef.current?.appendChild(generatedTexture);
+            const c = buildVoronoiConesWithSeeds(t);
+            setCones(c);
+            return () => { 
+                try {
+                    containerRef.current?.removeChild(generatedTexture);
+                } catch (e) {
+                    console.warn(e);
+                }
+            };
         } catch (e) {
             console.error(e)
         }
-    }, [ points ]);
+    }, [ points, containerRef.current, width, height ]);
 
     const values = useControls({
         'Voronoi': folder({
-            'visivel-v': true
+            'visivel-2d': true
         })
     })
     
     return (
         <>
-            {values['visivel-v'] && !debugHelper.controlValues[`voronoi-debugVisible`] && <primitive object={voronoi} />}
+            {!debugHelper.controlValues[`voronoi-debugVisible`] && <primitive object={cones} />}
+            <Html>
+                {
+                    createPortal(
+                        <div 
+                            style={{ 
+                                display: values['visivel-2d'] && !debugHelper.controlValues[`voronoi-debugVisible`] ? 'block' : 'none', 
+                                position: 'absolute', 
+                                top: topMargin, 
+                                left: 0 
+                            }} id="voronoi-canvas" ref={containerRef}></div>,
+                        document.body
+                    )
+                }
+                
+            </Html>
         </>
-    )
+    );
 }
 
 interface Props extends PolygonLoaderProps {
 }
 
-export default function DigramaVoronoi(props : Props) {
+export default function DiagramaVoronoi(props : Props) {
     const { initialPoints: _, name: __, startVisible: ___, ...rest } = props;
     const [ initial, setInitial ] = useState<Point3[]>([]);
     
@@ -55,7 +84,7 @@ export default function DigramaVoronoi(props : Props) {
         }
         const points = importPointsFromMatrix(poly);
         setInitial(points);
-        addDebugConfig('voronoi-cones', { debugVisible: false });
+        addDebugConfig('voronoi-delaunay', { debugVisible: false });
     }, []);
 
     return (

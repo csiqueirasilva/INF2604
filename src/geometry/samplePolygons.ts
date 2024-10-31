@@ -155,6 +155,11 @@ export const SAMPLE_POLYGONS: SampleModel[] = [
         ].reverse(),
         description: "A classic star-shaped polygon used in the art gallery problem to study watchers and visibility in concave polygons.",
         name: "Star-Shaped Polygon"
+    },
+    {
+        points: createSnakePit(150, 2, 4),
+        name: "SNAKE PIT (150)",
+        description: "Attempt at replicating a snake like structure"
     }
 ];
 
