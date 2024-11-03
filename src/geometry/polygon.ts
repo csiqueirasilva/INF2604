@@ -33,11 +33,13 @@ function isEar(polygon: Point3[], a: Point3, b: Point3, c: Point3): boolean {
     return ret;
 }
 
-export function earClippingTriangulation(proposedPolygon: Point3[], name : string = "earClipping"): Triangle[] {
+export function earClippingTriangulation(proposedPolygon: Point3[], name : string = "earClipping", debug: boolean = true): Triangle[] {
     const triangles: Triangle[] = [];
     let originalSize = 0;
 
-    ClearDebugObject(name);
+    if(debug) {
+        ClearDebugObject(name);
+    }
 
     if(proposedPolygon.length > 0 && arePointsCoplanar(proposedPolygon)) {
 
@@ -51,7 +53,9 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
 
         originalSize = polygon.length;
 
-        PushDebugObjects(name, ...createDebugArrowSegments(polygon), createDebugHighlightPoint(centroidFromPoints(...polygon)));
+        if(debug) {
+            PushDebugObjects(name, ...createDebugArrowSegments(polygon), createDebugHighlightPoint(centroidFromPoints(...polygon)));
+        }
 
         const remainingPolygon = [...polygon]; // copy
 
@@ -73,11 +77,13 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
                     // remove ela
                     remainingPolygon.splice(i, 1);
 
-                    PushDebugObjects(name, 
-                        createDebugTriangulatedSurface(triangles), 
-                        createDebugSurface(p), 
-                        ...createDebugArrowSegments(remainingPolygon)
-                    );
+                    if(debug) {
+                        PushDebugObjects(name, 
+                            createDebugTriangulatedSurface(triangles), 
+                            createDebugSurface(p), 
+                            ...createDebugArrowSegments(remainingPolygon)
+                        );
+                    }
 
                     earFound = true;
                 }
@@ -94,7 +100,9 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
 
     }
 
-    PushDebugObjects(name, createDebugTriangulatedSurface(triangles), createDebugText(`${originalSize} vertices (n); ${triangles.length} triangles (n - 2);`, new Vector3(0, 7, 0)));
+    if(debug) {
+        PushDebugObjects(name, createDebugTriangulatedSurface(triangles), createDebugText(`${originalSize} vertices (n); ${triangles.length} triangles (n - 2);`, new Vector3(0, 7, 0)));
+    }
 
     return triangles;
 }

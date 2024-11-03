@@ -42,7 +42,7 @@ function InternalComponentDelaunay({ points } : { points : Point3[] }) {
             let pointsIt = setPoints;
             const int = setInterval(() => {
                 if(!t.isCentroidal()) {
-                    pointsIt = t.getLloysRelaxationPoints();
+                    pointsIt = t.getLloydRelaxationPoints();
                     t = voronoiDiagramFromDelaunay(pointsIt.map(x => x.clone()));
                     c = buildVoronoiConesWithSeeds(t);
                     setCones(c);

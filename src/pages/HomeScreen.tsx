@@ -19,6 +19,7 @@ import RepresentacaoMalhaTriangulos from "@pages/exercicios/RepresentacaoMalhaTr
 import TriangulacaoDelaunayScreen from "@pages/exercicios/TriangulacaoDelaunay";
 import TriangulacaoDelaunayScreenConvexo from "@pages/exercicios/TriangulacaoDelaunayConvexo";
 import TriangulacaoPoligonoScreen from "@pages/exercicios/TriangulacaoPoligono";
+import WeightedVoronoiStippling from "@pages/exercicios/WeightedVoronoiStippling";
 
 interface RouteEntry {
     url: string
@@ -118,6 +119,11 @@ const routesHelper: RouteSection[] = [{
             component: DiagramaVoronoi2dScreen,
             title: 'Diagrama Voronoi (Relaxamento)',
             url: '/trabalhos/diagrama-voronoi-relaxamento'
+        },
+        {
+            component: WeightedVoronoiStippling,
+            title: 'Weighted Voronoi Stippling',
+            url: '/trabalhos/weighted-voronoi-stippling'
         }
     ]
 }]

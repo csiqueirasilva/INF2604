@@ -188,7 +188,7 @@ function isOnEdgeOfTriangle(point : Point3, edgePoint1 : Point3, edgePoint2 : Po
     return point.isBetween(edgePoint1, edgePoint2);
 }
 
-function iterativeDelaunayConvex(graph: DualGraph<Triangle>, points : Point3[], name : string) {
+function iterativeDelaunayConvex(graph: DualGraph<Triangle>, points : Point3[], name : string, debug: boolean = true) {
     let shapes = graph.shapes;
     for(const point of points) {
         for (const shape of shapes) {
@@ -207,7 +207,9 @@ function iterativeDelaunayConvex(graph: DualGraph<Triangle>, points : Point3[], 
                 break;
             }
         }
-        PushDebugObjects(name, createDebugTriangulatedSurface(shapes), createDebugText(`p`, point.toVector3()));
+        if(debug) {
+            PushDebugObjects(name, createDebugTriangulatedSurface(shapes), createDebugText(`p`, point.toVector3()));
+        }
     }
     iterativeDelaunay(graph, name);
 }
@@ -223,7 +225,7 @@ export function delaunayTriangulation(proposedPolygon: Point3[], name : string =
     return triangles;
 }
 
-export function delaunayTriangulationConvex(proposedPolygon: Point3[], name : string = "delaunay", useBoundingBox: boolean = false, width : number = 8, height : number = 8): Triangle[] {
+export function delaunayTriangulationConvex(proposedPolygon: Point3[], name : string = "delaunay", useBoundingBox: boolean = false, width : number = 8, height : number = 8, debug : boolean = true): Triangle[] {
     let boundingPoints : Point3[];
     if(proposedPolygon.length > 0 && proposedPolygon[proposedPolygon.length - 1].equals(proposedPolygon[0])) {
         proposedPolygon = proposedPolygon.slice(0, proposedPolygon.length - 1);
@@ -233,13 +235,17 @@ export function delaunayTriangulationConvex(proposedPolygon: Point3[], name : st
     } else {
         boundingPoints = quickHull(proposedPolygon);
     }
-    const triangles: Triangle[] = earClippingTriangulation(boundingPoints, name);
+    const triangles: Triangle[] = earClippingTriangulation(boundingPoints, name, debug);
     const graph = new DualGraph<Triangle>(triangles);
-    const debugTriangulation = createDebugTriangulatedSurface(triangles);
-    let acc : any = [ debugTriangulation, createDebugDualGraphForTriangles(graph, false, false, false) ]; 
-    PushDebugObjects(name, ...acc);
+    if(debug) {
+        const debugTriangulation = createDebugTriangulatedSurface(triangles);
+        let acc : any = [ debugTriangulation, createDebugDualGraphForTriangles(graph, false, false, false) ]; 
+        PushDebugObjects(name, ...acc);
+    }
     let nonConvexHullPoints = proposedPolygon.filter(p => !boundingPoints.some(x => x.equals(p)));
-    iterativeDelaunayConvex(graph, nonConvexHullPoints, name);
-    PushDebugObjects(name, createDebugDualGraphForTriangles(graph, false, false, false));
+    iterativeDelaunayConvex(graph, nonConvexHullPoints, name, debug);
+    if(debug) {
+        PushDebugObjects(name, createDebugDualGraphForTriangles(graph, false, false, false));
+    }
     return graph.shapes;
 }
