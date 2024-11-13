@@ -81,7 +81,6 @@ export class VoronoiCell extends PolygonShape {
         const factorY = factor / aspect;
         const coordX = this.seed.x;
         const coordY = this.seed.y;
-        const stippleRadius = 1;
         let p = fromVoronoiCanvasStipple(this.seed.x, this.seed.y, factorX, factorY, imageData.width, imageData.height);
         const index = (p.y * imageData.width + p.x) * 4;
         const r = imageData.data[index + 0];
@@ -89,7 +88,8 @@ export class VoronoiCell extends PolygonShape {
         const b = imageData.data[index + 2];
         const a = imageData.data[index + 3];
         const stippleColor = new Color(r / 255, g / 255, b / 255);
-        const ret = a === 0 ? null : new WeightedVoronoiStipple(coordX, coordY, stippleRadius, '#' + stippleColor.getHexString());
+        const brightness = 1 - (((r+g+b)/3) / 255);
+        const ret = a === 0 ? null : new WeightedVoronoiStipple(coordX, coordY, brightness, '#' + stippleColor.getHexString());
         this.weightedCentroid = ret;
         return ret;
     }
@@ -354,7 +354,7 @@ function createCone(centroid: Vector3, idx: number = 0): Group {
     return coneGroup;
 }
 
-export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTMLCanvasElement, ctx : CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
+export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTMLCanvasElement, ctx : CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, fillEdge = true, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
     if (ctx) {
         const pixelRatio = 2;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -362,7 +362,7 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTM
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor);
+        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge);
     }
 }
 
@@ -388,7 +388,7 @@ export function generateVoronoiTexture(diagram: VoronoiDiagram, width: number = 
     return canvas;
 }
 
-function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, pixelRatio: number, drawSeeds: boolean, drawCentroids : boolean, drawEdges : boolean, drawTriangulation : boolean, factor: number) {
+function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, pixelRatio: number, drawSeeds: boolean, drawCentroids : boolean, drawEdges : boolean, drawTriangulation : boolean, factor: number, fillEdge : boolean) {
     context.strokeStyle = 'black';
     context.lineWidth = 1;
     context.fillStyle = 'black';
@@ -412,30 +412,46 @@ function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingConte
 
             if(drawEdges) {
 
-                cell.getEdges().forEach(edge => {
+                // Begin the entire cell path
+                context.beginPath();
 
-                    context.fillStyle = 'black';
+                // Loop through each edge to create a continuous path
+                cell.getEdges().forEach((edge, index) => {
+                    // Move to the starting point of the first edge
+                    if (index === 0) {
+                        context.moveTo(
+                            (context.canvas.width / 2 + edge.start.x * factor) / pixelRatio,
+                            (context.canvas.height / 2 + edge.start.y * factor) / pixelRatio
+                        );
+                    }
 
-                    context.beginPath();
-                    context.arc(((context.canvas.width / 2) + (factor * edge.end.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * edge.end.y)) / pixelRatio, 2, 0, Math.PI * 2);
-                    context.fill();
-
-                    context.strokeStyle = 'black';
-
-                    context.beginPath();
-                    context.moveTo((context.canvas.width / 2 + (edge.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.start.y * factor)) / pixelRatio);
-                    context.lineTo((context.canvas.width / 2 + (edge.end.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.end.y * factor)) / pixelRatio);
-                    context.stroke();
-
+                    // Draw a line to the end of each edge
+                    context.lineTo(
+                        (context.canvas.width / 2 + edge.end.x * factor) / pixelRatio,
+                        (context.canvas.height / 2 + edge.end.y * factor) / pixelRatio
+                    );
                 });
 
-            }
+                // Close the path to ensure it's a complete shape
+                context.closePath();
 
+                // Optionally, set stroke properties and outline the path if needed
+                context.strokeStyle = 'black';
+                context.stroke();
+
+                // Apply stipple effect if needed
+                if (stipple && fillEdge) {
+                    context.fillStyle = stipple.color;
+                    context.fill();
+                }
+
+            } 
+            
             if(stipple && drawSeeds) {
 
                 context.fillStyle = stipple.color;
                 context.beginPath();
-                context.arc(((context.canvas.width / 2) + (factor * cell.seed.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.seed.y)) / pixelRatio, 2, 0, Math.PI * 2);
+                context.arc(((context.canvas.width / 2) + (factor * cell.seed.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.seed.y)) / pixelRatio, Math.max(1, stipple.radius * 2), 0, Math.PI * 2);
                 context.fill();
 
             }
@@ -445,7 +461,7 @@ function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingConte
                 context.fillStyle = '#5cfcff';
 
                 context.beginPath();
-                context.arc(((context.canvas.width / 2) + (factor * cell.centroid.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.centroid.y)) / pixelRatio, 2, 0, Math.PI * 2);
+                context.arc(((context.canvas.width / 2) + (factor * cell.centroid.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.centroid.y)) / pixelRatio, 1, 0, Math.PI * 2);
                 context.fill();
 
             }

@@ -9,7 +9,7 @@ import { useWindowDimensions } from "react-native";
 function extractNonTransparentPoints(data : { width: number, height: number, pixels : Uint8ClampedArray }, targetWidth : number, targetHeight : number) {
     const points = [];
     
-    const pointsToExtract = 1000;
+    const pointsToExtract = 1400;
 
     let retryLimit = pointsToExtract * 10;
     let retryCount = 0;
@@ -88,7 +88,8 @@ export default function WeightedVoronoiStippling() {
             'seeds': true,
             'centroids': true,
             'edges': true,
-            'triangulation': true
+            'triangulation': true,
+            'fillEdge': false
         })
     })
 
@@ -114,7 +115,7 @@ export default function WeightedVoronoiStippling() {
                     const voronoiWidth = myTargetSpace;
                     const voronoiHeight = myTargetSpace / aspect;
                     let pointsIt = vd.getWeightedVoronoiStipples(imageData, myTargetSpace);
-                    workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: voronoiWidth, height: voronoiHeight });
+                    workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: width, height: height });
                 }
             };
             workerRef.current = worker;
@@ -150,7 +151,7 @@ export default function WeightedVoronoiStippling() {
                 const voronoiWidth = myTargetSpace;
                 const voronoiHeight = myTargetSpace / aspect;
                 let pointsIt = setPoints;
-                workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: voronoiWidth, height: voronoiHeight });
+                workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: width, height: height });
             }
         } catch (e) {
             console.error(e)
@@ -163,9 +164,9 @@ export default function WeightedVoronoiStippling() {
     useEffect(() => {
         if(canvasRef.current && offscreenContext && imageData && voronoi) {
             drawImageOnCanvas();     
-            drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, offscreenContext, imageData, myTargetSpace, voronoi, values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
+            drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, offscreenContext, imageData, myTargetSpace, voronoi, values['fillEdge'], values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
         }
-    }, [ voronoi, values['seeds'], values['edges'], values['triangulation'], values['centroids'] ]);
+    }, [ voronoi, values['fillEdge'], values['seeds'], values['edges'], values['triangulation'], values['centroids'] ]);
 
     return (
         <>
