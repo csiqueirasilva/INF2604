@@ -58,11 +58,12 @@ export function earClippingTriangulation(proposedPolygon: Point3[], name : strin
         }
 
         const remainingPolygon = [...polygon]; // copy
-
+        let it = 0;
         while (remainingPolygon.length >= 3) {
             let earFound = false;
 
             for (let i = 0; i < remainingPolygon.length; i++) {
+
                 const prevIndex = (i - 1 + remainingPolygon.length) % remainingPolygon.length;
                 const nextIndex = (i + 1) % remainingPolygon.length;
                 const prev = remainingPolygon[prevIndex];

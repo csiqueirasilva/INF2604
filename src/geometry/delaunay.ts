@@ -191,6 +191,7 @@ function isOnEdgeOfTriangle(point : Point3, edgePoint1 : Point3, edgePoint2 : Po
 function iterativeDelaunayConvex(graph: DualGraph<Triangle>, points : Point3[], name : string, debug: boolean = true) {
     let shapes = graph.shapes;
     for(const point of points) {
+        shapes = graph.queryNearbyShapes(point);
         for (const shape of shapes) {
             let nodesToOperate : DualGraphNode<Triangle>[] = [];
             if(isPointInsideTriangle(point, shape.points[0], shape.points[1], shape.points[2])) {
@@ -203,7 +204,6 @@ function iterativeDelaunayConvex(graph: DualGraph<Triangle>, points : Point3[], 
                 nodesToOperate = splitEdgeOnPoint(graph, shape, point, shape.points[2], shape.points[0]);
             }   
             if(nodesToOperate.length > 0) {
-                shapes = graph.shapes;
                 break;
             }
         }

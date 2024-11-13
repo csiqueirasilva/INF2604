@@ -6,9 +6,11 @@ import { Point3 } from "@geometry/points";
 import { calculateCentroidZeroZ, centroidFromPoints, PolarReference, quickHull, sortConvexPointsCCW } from "@geometry/topology";
 import { PolygonEdge, PolygonShape, Triangle } from "@geometry/triangle";
 import { createDebugDualGraphForTrianglesTraversalOrdered, createDebugPointCloud, DEBUG_COLORS, getDebugRandomColorBasicMaterial } from "@helpers/3DElements/Debug/debugVisualElements";
-import { polygonIntersectsPolygon } from "geometric";
+import { Point, polygonIntersectsPolygon } from "geometric";
 import { CanvasTexture, Color, ColorRepresentation, ConeGeometry, Float32BufferAttribute, FrontSide, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, SphereGeometry, Vector3 } from "three";
 import { clip } from 'liang-barsky';
+import { Delaunay, Voronoi } from "d3-delaunay";
+import * as PIXI from 'pixi.js';
 
 const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
 
@@ -51,7 +53,8 @@ export class VoronoiCell extends PolygonShape {
     public seed: Point3;
     public centroid: Point3;
     public original: boolean = true;
-    private static THRESHOLD_CONVERGENCE = 0.001;
+    public weightedCentroid : WeightedVoronoiStipple|null = null;
+    private static THRESHOLD_CONVERGENCE = 0.0001;
 
     constructor(seed: Point3, points: Point3[], original: boolean = true) {
         super(points);
@@ -71,31 +74,23 @@ export class VoronoiCell extends PolygonShape {
         return ret;
     }
 
-    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number): WeightedVoronoiStipple => {
+    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number): WeightedVoronoiStipple|null => {
+        if(this.weightedCentroid) return this.weightedCentroid;
         const aspect = imageData.width / imageData.height;
         const factorX = factor;
         const factorY = factor / aspect;
-        const toImageSpaceMultX = (factorX / imageData.width);
-        const toImageSpaceMultY = (factorY / imageData.height);
         const coordX = this.seed.x;
         const coordY = this.seed.y;
         const stippleRadius = 1;
         let p = fromVoronoiCanvasStipple(this.seed.x, this.seed.y, factorX, factorY, imageData.width, imageData.height);
-        //console.log(this.seed, toImageSpaceMultX, toImageSpaceMultY, p);
         const index = (p.y * imageData.width + p.x) * 4;
         const r = imageData.data[index + 0];
         const g = imageData.data[index + 1];
         const b = imageData.data[index + 2];
+        const a = imageData.data[index + 3];
         const stippleColor = new Color(r / 255, g / 255, b / 255);
-        // let { minX, maxX, minY, maxY } = this.getBoundingBox();
-        // minX /= toImageSpaceMultX;
-        // maxX /= toImageSpaceMultX;
-        // minY /= toImageSpaceMultY;
-        // maxY /= toImageSpaceMultY;
-        // for(let i = minX; i < imageData.data) {
-        //     this.isPointInside
-        // }
-        const ret = new WeightedVoronoiStipple(coordX, coordY, stippleRadius, '#' + stippleColor.getHexString());
+        const ret = a === 0 ? null : new WeightedVoronoiStipple(coordX, coordY, stippleRadius, '#' + stippleColor.getHexString());
+        this.weightedCentroid = ret;
         return ret;
     }
 
@@ -114,6 +109,99 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
         const originals = this.shapes.filter(s => s.original);
         for (const cell of originals) {
             ret.push(cell.centroid);
+        }
+        return ret;
+    }
+    public getWeightedVoronoiStipples = (imageData : ImageData, factor : number): Point3[] => {
+        const ret: Point3[] = [];
+        const aspect = imageData.width / imageData.height;
+        const factorX = factor;
+        const factorY = factor / aspect;
+        const points = this.getSeeds().map(x => { 
+            const p = fromVoronoiCanvasStipple(x.x, x.y, factorX, factorY, imageData.width, imageData.height)
+            return [ p.x, p.y ];
+        }) as ArrayLike<Point>;
+        const delaunay = Delaunay.from(points);
+        const centroids = new Array(this.shapes.length);
+        for(let i = 0; i < centroids.length; i++) {
+            centroids[i] = new Point3(0, 0, 0);
+        }
+        const weights = new Array(this.shapes.length).fill(0);
+        let delaunayIndex = 0;
+        for(let i = 0; i < imageData.width; i++) {
+            for(let j = 0; j < imageData.height; j++) {
+                const index = (j * imageData.width + i) * 4;
+                const a = imageData.data[index + 3];
+                if(a !== 0) {
+                    const r = imageData.data[index + 0];
+                    const g = imageData.data[index + 1];
+                    const b = imageData.data[index + 2];
+                    const value = (r + g + b) / 3;
+                    const weight = 1 - (value / 255);
+                    delaunayIndex = delaunay.find(i, j, delaunayIndex);
+                    centroids[delaunayIndex].x += i * weight;
+                    centroids[delaunayIndex].y += j * weight;
+                    weights[delaunayIndex] += weight;
+                }
+            }
+        }
+        for(let i = 0; i < centroids.length; i++) {
+            let v : [ number, number ];
+            if(weights[i] > 0) {
+                v = [ centroids[i].x / weights[i], centroids[i].y / weights[i] ];
+            } else {
+                v = [ points[i][0], points[i][1] ];
+            }
+            let pushed = toVoronoiCanvasStipple(v[0], v[1], factorX, factorY, imageData.width, imageData.height);
+            ret.push(pushed);
+        }
+        return ret;
+    }
+    public toPlainObject() {
+        return {
+            shapes: this.shapes.map(shape => ({
+                seed: { x: shape.seed.x, y: shape.seed.y },
+                points: shape.points.map(p => ({ x: p.x, y: p.y })),
+                centroid: { x: shape.centroid.x, y: shape.centroid.y }
+            })),
+            edges: this.triangulationEdges.map(edge => ({
+                start: ({ x: edge.start.x, y: edge.start.y }),
+                end: ({ x: edge.end.x, y: edge.end.y })
+            }))
+        };
+    }
+    static fromPlainObject(plain : { shapes : { seed : { x : number, y : number }, points: { x : number, y : number }[], centroid: { x : number, y : number } }[], edges: { start: { x : number, y : number }, end: { x : number, y : number } }[] }) : VoronoiDiagram {
+        const ret = new VoronoiDiagram([]);
+        ret.triangulationEdges = plain.edges.map(ed => new PolygonEdge( new Point3(ed.start.x, ed.start.y, 0), new Point3(ed.end.x, ed.end.y, 0) ));
+        ret.shapes = plain.shapes.map(sp => new VoronoiCell( new Point3(sp.seed.x, sp.seed.y), sp.points.map(p => new Point3(p.x, p.y, 0)), true ));
+        return ret;
+    }
+    static buildWithD3Delaunay = (proposedPolygon: Point3[], width: number = 8, height: number = 8) => {
+        const delaunay = Delaunay.from(proposedPolygon.map(x => [ x.x, x.y ]));
+        const ret = new VoronoiDiagram([]);
+        const d3Voronoi = delaunay.voronoi([-width, -height, width, height ]);
+        for (let i = 0; i < delaunay.points.length / 2; i++) {
+            const seed = new Point3(delaunay.points[2 * i], delaunay.points[2 * i + 1], 0);
+            const d3Cell = d3Voronoi.cellPolygon(i);
+            if (!d3Cell) continue;
+            const points = Array.from(d3Cell, ([x, y]) => new Point3(x, y, 0));
+            const cell = new VoronoiCell(seed, points, true);
+            ret.addShape(cell);
+        }
+        for (let t = 0; t < delaunay.triangles.length; t += 3) {
+            const p0 = new Point3(delaunay.points[2 * delaunay.triangles[t]], delaunay.points[2 * delaunay.triangles[t] + 1], 0);
+            const p1 = new Point3(delaunay.points[2 * delaunay.triangles[t + 1]], delaunay.points[2 * delaunay.triangles[t + 1] + 1], 0);
+            const p2 = new Point3(delaunay.points[2 * delaunay.triangles[t + 2]], delaunay.points[2 * delaunay.triangles[t + 2] + 1], 0);
+            const edges = [
+                new PolygonEdge(p0, p1),
+                new PolygonEdge(p1, p2),
+                new PolygonEdge(p2, p0)
+            ];
+            for (const edge of edges) {
+                if (!ret.triangulationEdges.some(e => e.equals(edge))) {
+                    ret.triangulationEdges.push(edge);
+                }
+            }
         }
         return ret;
     }
@@ -206,6 +294,10 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
     }
 }
 
+export function voronoiDiagramFromD3Delaunay(proposedPolygon: Point3[], width: number = 8, height: number = 8): VoronoiDiagram {
+    return VoronoiDiagram.buildWithD3Delaunay(proposedPolygon, width, height);
+}
+
 export function voronoiDiagramFromDelaunay(proposedPolygon: Point3[], name: string = "voronoi-delaunay", width: number = 8, height: number = 8, debug = true): VoronoiDiagram {
     const triangles: Triangle[] = delaunayTriangulationConvex([...proposedPolygon], name, true, width, height, debug);
     const graph = new DualGraph(triangles);
@@ -262,9 +354,7 @@ function createCone(centroid: Vector3, idx: number = 0): Group {
     return coneGroup;
 }
 
-export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTMLCanvasElement, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
-    const ctx = canvas.getContext('2d');
-
+export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTMLCanvasElement, ctx : CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
     if (ctx) {
         const pixelRatio = 2;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -341,7 +431,7 @@ function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingConte
 
             }
 
-            if(drawSeeds) {
+            if(stipple && drawSeeds) {
 
                 context.fillStyle = stipple.color;
                 context.beginPath();
@@ -428,3 +518,92 @@ function drawVoronoiLinesInCanvas(context: CanvasRenderingContext2D, diagram: Vo
     });
 
 } 
+
+export function drawWeightedVoronoiStipplingTextureOnExistingCanvasPixi(
+    g : PIXI.Graphics,
+    imageData: ImageData,
+    imageToCanvasFactor: number,
+    diagram: VoronoiDiagram,
+    canvasWidth: number,
+    canvasHeight: number,
+    drawSeeds = true,
+    drawCentroids = true,
+    drawEdges = true,
+    drawTriangulation = true,
+    factor: number = 40
+) {
+    g.clear();
+    drawWeightedVoronoiStipplingLinesInPIXI(g, imageData, imageToCanvasFactor, diagram, 1, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, canvasWidth, canvasHeight);
+}
+
+function drawWeightedVoronoiStipplingLinesInPIXI(
+    graphics: PIXI.Graphics,
+    imageData: ImageData,
+    imageToCanvasFactor: number,
+    diagram: VoronoiDiagram,
+    pixelRatio: number,
+    drawSeeds: boolean,
+    drawCentroids: boolean,
+    drawEdges: boolean,
+    drawTriangulation: boolean,
+    factor: number,
+    canvasWidth: number,
+    canvasHeight: number
+) {
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+
+    if (drawTriangulation) {
+        graphics.lineStyle(1 / factor, 0xfae2e2); // Triangulation edges color
+        diagram.triangulationEdges.forEach((edge: PolygonEdge) => {
+            graphics.moveTo(
+                (centerX + edge.start.x * factor) / pixelRatio,
+                (centerY - edge.start.y * factor) / pixelRatio
+            );
+            graphics.lineTo(
+                (centerX + edge.end.x * factor) / pixelRatio,
+                (centerY - edge.end.y * factor) / pixelRatio
+            );
+        });
+    }
+
+    diagram.shapes.forEach((cell: VoronoiCell) => {
+        if (cell.original) {
+            const stipple = cell.getWeightedCentroidBasedOnImage(imageData, imageToCanvasFactor);
+
+            if (drawEdges) {
+                graphics.lineStyle(1 / factor, 0x000000); // Edges color
+                cell.getEdges().forEach((edge: PolygonEdge) => {
+                    graphics.moveTo(
+                        (centerX + edge.start.x * factor) / pixelRatio,
+                        (centerY - edge.start.y * factor) / pixelRatio
+                    );
+                    graphics.lineTo(
+                        (centerX + edge.end.x * factor) / pixelRatio,
+                        (centerY - edge.end.y * factor) / pixelRatio
+                    );
+                });
+            }
+
+            if (stipple && drawSeeds) {
+                graphics.beginFill(stipple.color);
+                graphics.drawCircle(
+                    (centerX + cell.seed.x * factor) / pixelRatio,
+                    (centerY - cell.seed.y * factor) / pixelRatio,
+                    2 / pixelRatio
+                );
+                graphics.endFill();
+            }
+
+            if (drawCentroids) {
+                graphics.beginFill(0x5cfcff); // Centroid color
+                graphics.drawCircle(
+                    (centerX + cell.centroid.x * factor) / pixelRatio,
+                    (centerY - cell.centroid.y * factor) / pixelRatio,
+                    2 / pixelRatio
+                );
+                graphics.endFill();
+            }
+        }
+    });
+}

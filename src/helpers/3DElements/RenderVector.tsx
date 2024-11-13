@@ -41,14 +41,14 @@ export default function RenderVector({
 
     const [{ pos_x, pos_y, pos_z, ori_x, ori_y, ori_z, toggleShowName, toggleDebug, setColor }, setControls] = useControls(`Vetor ${props.name}`, () => {
         const ret: any = {}
-        if (props.setValue instanceof Function) {
+        if (value && props.setValue instanceof Function) {
             ret['apontamento'] = folder({
                 pos_x: { value: value.x, min: min, max: max, step: step },
                 pos_y: { value: value.y, min: min, max: max, step: step },
                 pos_z: { value: value.z, min: min, max: max, step: step },
             })
         }
-        if (props.setOrigin instanceof Function) {
+        if (origin && props.setOrigin instanceof Function) {
             ret['origem'] = folder({
                 ori_x: { value: origin.x, min: min, max: max, step: step },
                 ori_y: { value: origin.y, min: min, max: max, step: step },
@@ -57,7 +57,7 @@ export default function RenderVector({
         }
         ret['toggleDebug'] = debug;
         ret['toggleShowName'] = showName;
-        ret['setColor'] = color.toString();
+        ret['setColor'] = color?.toString();
         return ret;
     }, [ props.setValue, props.setOrigin ]);
 
@@ -76,7 +76,7 @@ export default function RenderVector({
         if (value && props.setValue) {
             setControls({ pos_x: value.x, pos_y: value.y, pos_z: value.z });
         }
-        prevValueRef.current = value;
+        prevValueRef.current = value || new THREE.Vector3(0, 0, 0);
     }, [value]);
 
     const prevOriginRef = useRef(origin);
@@ -91,7 +91,7 @@ export default function RenderVector({
         if (origin && props.setOrigin) {
             setControls({ ori_x: origin.x, ori_y: origin.y, ori_z: origin.z });
         }
-        prevOriginRef.current = value;
+        prevOriginRef.current = value || new THREE.Vector3(0, 0, 0);
     }, [origin]);
 
     return (

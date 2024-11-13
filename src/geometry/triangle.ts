@@ -3,10 +3,17 @@ import { Point3 } from "@geometry/points";
 import { PolarReference } from "@geometry/topology";
 
 export class BoundingBox2d {
-    public minX : number = 0;
-    public minY : number = 0;
-    public maxX : number = 0;
-    public maxY : number = 0;
+    public minX: number;
+    public minY: number;
+    public maxX: number;
+    public maxY: number;
+
+    constructor(minX: number = 0, minY: number = 0, maxX: number = 0, maxY: number = 0) {
+        this.minX = minX;
+        this.minY = minY;
+        this.maxX = maxX;
+        this.maxY = maxY;
+    }
 }
 
 export class PolygonEdge {

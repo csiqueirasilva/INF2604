@@ -1,15 +1,15 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import { multiplyPointByScalar } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
-import { drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromDelaunay } from "@geometry/voronoi";
+import { drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay } from "@geometry/voronoi";
 import { folder, useControls } from "leva";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowDimensions } from "react-native";
 
 function extractNonTransparentPoints(data : { width: number, height: number, pixels : Uint8ClampedArray }, targetWidth : number, targetHeight : number) {
     const points = [];
     
-    const pointsToExtract = 500;
+    const pointsToExtract = 1000;
 
     for(let i = 0; i < pointsToExtract; i++) {
         let x = Math.ceil(data.width * Math.random());
@@ -18,39 +18,14 @@ function extractNonTransparentPoints(data : { width: number, height: number, pix
         const r = data.pixels[index + 0];
         const g = data.pixels[index + 1];
         const b = data.pixels[index + 2];
-        //const brightness = (0.21 * r) + (0.72 * g) + (0.07) * b;
-        const brightness = (r+g+b)/3;
-        if(brightness > 0.25) {
+        const brightness = (0.21 * r) + (0.72 * g) + (0.07) * b;
+        if(brightness > 0.1) {
             const p = toVoronoiCanvasStipple(x, y, targetWidth, targetHeight, data.width, data.height);
             points.push(p);
         } else {
             i--;
         }
     }
-
-    // const maxX = 81;
-    // const maxY = 81;
-    // const segmentX = 100 / maxX;
-    // const segmentY = 100 / maxY;
-
-    // for(let i = 0; i <= maxY; i++) {
-    //     for(let j = 0; j <= maxX; j++) {
-    //         let x = Math.trunc(((j * segmentX)  / 100) * data.width);
-    //         let y = Math.trunc(((i * segmentY) / 100) * data.height);
-    //         const index = (y * data.width + x) * 4;
-    //         const r = data.pixels[index + 0];
-    //         const g = data.pixels[index + 1];
-    //         const b = data.pixels[index + 2];
-    //         const brightness = (r+g+b)/3;
-    //         if(brightness > 0.1) {
-    //             const p = toVoronoiCanvasStipple(x, y, targetWidth, targetHeight, data.width, data.height);
-    //             points.push(p);
-    //         }
-    //     }
-    // }
-
-//    console.log("original points", originalPoints);
-    console.log("extracted points", points);
 
     return points;
 }
@@ -101,7 +76,7 @@ export default function WeightedVoronoiStippling() {
     const marginTop = 60;
     const width = dims.width;
     const height = dims.height - marginTop;
-    const myTargetSpace = 8;
+    const myTargetSpace = 6;
     
     const values = useControls({
         'Voronoi': folder({
@@ -114,18 +89,41 @@ export default function WeightedVoronoiStippling() {
     })
 
     const drawImageOnCanvas = () => {
-        let ctx = canvasRef.current?.getContext('2d');
+        let ctx = canvasRef.current?.getContext('2d', { alpha: false});
         if(ctx && imageData) {
             ctx.clearRect(0, 0, width, height);
             ctx.putImageData(imageData, 0, 0);
         }
     }
 
+    const workerRef = useRef<Worker | null>(null);
+
     useEffect(() => {
-        // let poly = SAMPLE_POLYGONS.find(x => x.name === "Star-Shaped Polygon")?.points;
-        // const points = importPointsFromMatrix(poly!);
-        // setPoints(points);
-        // addDebugConfig('voronoi-delaunay', { debugVisible: false });
+        if(window.Worker) {
+            let worker = new Worker('./voronoiWorker.js');
+            worker.onmessage = (event) => {
+                const { result } = event.data;
+                const vd = VoronoiDiagram.fromPlainObject(result);
+                setVoronoi(vd);
+                if(vd && !vd.isCentroidal() && canvasRef.current && imageData) {
+                    const aspect = imageData.width / imageData.height;
+                    const voronoiWidth = myTargetSpace;
+                    const voronoiHeight = myTargetSpace / aspect;
+                    let pointsIt = vd.getWeightedVoronoiStipples(imageData, myTargetSpace);
+                    workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: voronoiWidth, height: voronoiHeight });
+                }
+            };
+            workerRef.current = worker;
+        }
+        return () => {
+            if (workerRef.current) {
+                workerRef.current.terminate();
+            }
+        };
+    }, [ imageData ]);
+
+
+    useEffect(() => {
         if(values['image']) {
             getImagePixels(values['image'])
                 .then(data => {
@@ -147,36 +145,21 @@ export default function WeightedVoronoiStippling() {
                 const aspect = imageData.width / imageData.height;
                 const voronoiWidth = myTargetSpace;
                 const voronoiHeight = myTargetSpace / aspect;
-                let t = voronoiDiagramFromDelaunay(setPoints.map(x => x.clone()), "voronoi-delaunay", voronoiWidth, voronoiHeight, false);
-                setVoronoi(t);
-                // drawImageOnCanvas();
-                // drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, imageData, myTargetSpace, t, values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
                 let pointsIt = setPoints;
-                const int = setInterval(() => {
-                    // if(!t.isCentroidal() && canvasRef.current && imageData) {
-                    //     drawImageOnCanvas();
-                    //     pointsIt = t.getLloydRelaxationPoints();
-                    //     t = voronoiDiagramFromDelaunay(pointsIt.map(x => x.clone()));
-                    //     drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, imageData, myTargetSpace, t, values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
-                    // }
-                }, 100);
-                return () => { 
-                    try {
-                        clearInterval(int);
-                    } catch (e) {
-                        console.warn(e);
-                    }
-                };
+                workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: voronoiWidth, height: voronoiHeight });
             }
         } catch (e) {
             console.error(e)
         }
     }, [ points, width, height ]);
 
+    const offscreenCanvas = useMemo(() => canvasRef.current, [ canvasRef.current ]);
+    const offscreenContext = useMemo(() => offscreenCanvas?.getContext('2d'), [ offscreenCanvas ]);
+
     useEffect(() => {
-        if(canvasRef.current && imageData && voronoi) {
-            drawImageOnCanvas();
-            drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, imageData, myTargetSpace, voronoi, values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
+        if(canvasRef.current && offscreenContext && imageData && voronoi) {
+            drawImageOnCanvas();     
+            drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, offscreenContext, imageData, myTargetSpace, voronoi, values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
         }
     }, [ voronoi, values['seeds'], values['edges'], values['triangulation'], values['centroids'] ]);
 

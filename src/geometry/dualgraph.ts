@@ -1,5 +1,7 @@
 import { Point3 } from "@geometry/points";
-import { Triangle, PolygonEdge, PolygonShape } from "@geometry/triangle";
+import { Quadtree, Rectangle } from "@geometry/quadtree";
+import { Triangle, PolygonEdge, PolygonShape, BoundingBox2d } from "@geometry/triangle";
+import RBush from "rbush";
 
 let ID_SEQUENCE = 0;
 
@@ -166,11 +168,21 @@ export class DualGraphNode<T extends PolygonShape> {
 
 }
 
+const DEFAULT_RADIUS_SCALING = 1;
+
+class MyRBush<T extends PolygonShape> extends RBush<T> {
+    toBBox(a : T) { return a.getBoundingBox(); }
+    compareMinX(a : any, b : any) { return a.x - b.x; }
+    compareMinY(a : any, b : any) { return a.y - b.y; }
+}
+
 export class DualGraph<T extends PolygonShape> {
     public nodes : DualGraphNode<T>[] = [];
     public shapes : T[] = [];
+    private tree: MyRBush<T>;
 
-    constructor(shapes : T[]) {
+    constructor(shapes : T[], boundary = new Rectangle(0, 0, 1000, 1000), capacity = 4) {
+        this.tree = new MyRBush<T>();
         for(const t of shapes) {
             this.addShape(t);
         }
@@ -181,7 +193,7 @@ export class DualGraph<T extends PolygonShape> {
         return arr.map(x => x.shape);
     }
 
-    public getTraversalOrdered() : DualGraphNode<T>[] {
+    public getTraversalOrdered(startingIdx : number = 0) : DualGraphNode<T>[] {
         const visited : DualGraphNode<T>[] = [];
         const nodes = Array.from(this.nodes);
         function recHelper(node : DualGraphNode<T>) {
@@ -194,8 +206,8 @@ export class DualGraph<T extends PolygonShape> {
                 edge = edge.next;
             } while (edge && edge !== node.firstHalfEdge);
         }
-        if(nodes.length > 0) {
-            recHelper(nodes[0]);
+        if(nodes.length > startingIdx) {
+            recHelper(nodes[startingIdx]);
         }
         return visited;
     }
@@ -209,9 +221,21 @@ export class DualGraph<T extends PolygonShape> {
                 break;
             }
         }
+        this.tree.insert(shape);
         this.nodes.push(node);
         this.shapes.push(shape);
         return node;
+    }
+
+    public clearInactiveQuadtreeShapes() {
+        this.tree.clear();
+    }
+
+    public queryNearbyShapes(point: Point3, radiusScaling = DEFAULT_RADIUS_SCALING): T[] {
+        const rangeSizeX = Math.abs(point.x * radiusScaling);
+        const rangeSizeY = Math.abs(point.y * radiusScaling);
+        const range = new BoundingBox2d(-rangeSizeX, -rangeSizeY, rangeSizeX, rangeSizeY);
+        return this.tree.search(range);
     }
 
     public removeShape(shape : T) {
@@ -229,6 +253,7 @@ export class DualGraph<T extends PolygonShape> {
                 } while (edge && edge !== node.firstHalfEdge);
                 this.nodes.splice(nodeIdx, 1);
                 this.shapes.splice(shapeIdx, 1);
+                this.tree.remove(shape);
             }
         }
     }

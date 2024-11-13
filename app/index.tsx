@@ -1,5 +1,4 @@
 import MyText from '@components/MyText';
-import { SceneWithControlsProvider } from '@helpers/SceneWithControlsContext';
 import GrandezasSomaVetores from '@pages/conceitos-basicos/GrandezasSomaVetores';
 import GrandezasSubtracaoDeVetores from '@pages/conceitos-basicos/GrandezasSubtracaoDeVetores';
 import HomeScreen, { routesHelper } from '@pages/HomeScreen';
