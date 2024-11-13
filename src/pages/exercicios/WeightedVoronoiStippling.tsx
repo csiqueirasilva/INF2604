@@ -18,7 +18,7 @@ function extractNonTransparentPoints(data : { width: number, height: number, pix
         const r = data.pixels[index + 0];
         const g = data.pixels[index + 1];
         const b = data.pixels[index + 2];
-        const brightness = (0.21 * r) + (0.72 * g) + (0.07) * b;
+        const brightness = (r + g + b) / 3;
         if(brightness > 0.1) {
             const p = toVoronoiCanvasStipple(x, y, targetWidth, targetHeight, data.width, data.height);
             points.push(p);
