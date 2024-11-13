@@ -11,6 +11,9 @@ function extractNonTransparentPoints(data : { width: number, height: number, pix
     
     const pointsToExtract = 1000;
 
+    let retryLimit = pointsToExtract * 10;
+    let retryCount = 0;
+
     for(let i = 0; i < pointsToExtract; i++) {
         let x = Math.ceil(data.width * Math.random());
         let y = Math.ceil(data.height * Math.random());
@@ -18,11 +21,12 @@ function extractNonTransparentPoints(data : { width: number, height: number, pix
         const r = data.pixels[index + 0];
         const g = data.pixels[index + 1];
         const b = data.pixels[index + 2];
-        const brightness = (r + g + b) / 3;
-        if(brightness > 0.1) {
+        const a = data.pixels[index + 3];
+        const brightness = ((r + g + b) / 3) / 255;
+        if(a !== 0 && Math.random() > brightness) {
             const p = toVoronoiCanvasStipple(x, y, targetWidth, targetHeight, data.width, data.height);
             points.push(p);
-        } else {
+        } else if (++retryCount < retryLimit) {
             i--;
         }
     }
