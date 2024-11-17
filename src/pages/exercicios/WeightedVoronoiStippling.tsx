@@ -1,7 +1,8 @@
+import { CompositionMode } from "@components/CanvasCompositionMode";
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import { multiplyPointByScalar } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
-import { drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay, VoronoiPlainObject } from "@geometry/voronoi";
+import { CANVAS_VORONOI_STIPPLE_SCALE, drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay, VoronoiPlainObject } from "@geometry/voronoi";
 import { folder, useControls } from "leva";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowDimensions } from "react-native";
@@ -90,15 +91,35 @@ export default function WeightedVoronoiStippling() {
             'edges': true,
             'triangulation': true,
             'fillEdge': false,
-            'numberOfPoints': { min: 100, max: 20000, value: 1000 }
+            'coloredStipples': true,
+            'numberOfPoints': { min: 100, max: 20000, value: 1000 },
+            'minDotSize': { min: 0.25, max: 3, value: 0.5, step: 0.05 },
+            'maxDotSize': { min: 0.25, max: 3, value: 1.5, step: 0.05 },
+            'lineWidth': { min: 0.15, max: 2, value: 0.15, step: 0.05 },
+            'imageOpacity': { min: 0, max: 1, value: 0.15, step: 0.05 },
+            'compositionMode': { options:  Object.entries(CompositionMode).map(x => x[1]), value: CompositionMode.Darken }
         })
     })
 
-    const drawImageOnCanvas = () => {
-        let ctx = canvasRef.current?.getContext('2d', { alpha: false});
+    const drawImageOnCanvas = (opacity = 0.5) => {
+        let ctx = canvasRef.current?.getContext('2d', { alpha: true });
         if(ctx && imageData) {
+            const srcCanvas = document.createElement('canvas');
+            const srcCtx = srcCanvas.getContext('2d', { alpha: false });
+            srcCanvas.width = imageData.width;
+            srcCanvas.height = imageData.height;
+            srcCtx?.putImageData(imageData, 0, 0);
+            const aspect = imageData.width / imageData.height;
+            const targetWidthSrc = myTargetSpace;
+            const targetHeightSrc = myTargetSpace / aspect;
+            const factor = 40 * CANVAS_VORONOI_STIPPLE_SCALE;
+            const pixelRatio = 2;
+            const targetWidth = factor * targetWidthSrc;
+            const targetHeight = factor * targetHeightSrc;
             ctx.clearRect(0, 0, width, height);
-            ctx.putImageData(imageData, 0, 0);
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(srcCanvas, (width / 2 - targetWidth / 2) / pixelRatio, (height / 2 - targetHeight / 2) / pixelRatio, targetWidth / pixelRatio, targetHeight / pixelRatio);
+            ctx.globalAlpha = 1;
         }
     }
 
@@ -158,14 +179,32 @@ export default function WeightedVoronoiStippling() {
     }, [ points, width, height ]);
 
     const offscreenCanvas = useMemo(() => canvasRef.current, [ canvasRef.current ]);
-    const offscreenContext = useMemo(() => offscreenCanvas?.getContext('2d'), [ offscreenCanvas ]);
+    const offscreenContext = useMemo(() => offscreenCanvas?.getContext('2d', { alpha: true }), [ offscreenCanvas ]);
 
     useEffect(() => {
         if(canvasRef.current && offscreenContext && imageData && voronoi) {
-            drawImageOnCanvas();     
-            drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvasRef.current, offscreenContext, imageData, myTargetSpace, voronoi, values['fillEdge'], values['seeds'], values['centroids'], values['edges'], values['triangulation'], 40, false);
+            drawImageOnCanvas(values['imageOpacity']);     
+            drawWeightedVoronoiStipplingTextureOnExistingCanvas(
+                canvasRef.current, 
+                offscreenContext, 
+                imageData, 
+                myTargetSpace, 
+                voronoi, 
+                values['fillEdge'], 
+                values['seeds'], 
+                values['centroids'], 
+                values['edges'], 
+                values['triangulation'], 
+                40, 
+                false, 
+                values['minDotSize'],
+                values['maxDotSize'],
+                values['lineWidth'],
+                values['coloredStipples'],
+                values['compositionMode']
+            );
         }
-    }, [ voronoi, values['fillEdge'], values['seeds'], values['edges'], values['triangulation'], values['centroids'] ]);
+    }, [ voronoi, values['fillEdge'], values['seeds'], values['edges'], values['triangulation'], values['centroids'], values['maxDotSize'], values['minDotSize'], values['lineWidth'], values['coloredStipples'], values['imageOpacity'], values['compositionMode'] ]);
 
     return (
         <>

@@ -11,8 +11,9 @@ import { CanvasTexture, Color, ColorRepresentation, ConeGeometry, Float32BufferA
 import { clip } from 'liang-barsky';
 import { Delaunay, Voronoi } from "d3-delaunay";
 import * as PIXI from 'pixi.js';
+import { CompositionMode } from "@components/CanvasCompositionMode";
 
-const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
+export const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
 
 export interface VoronoiPlainObject { 
     shapes : { 
@@ -392,7 +393,24 @@ function createCone(centroid: Vector3, idx: number = 0): Group {
     return coneGroup;
 }
 
-export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTMLCanvasElement, ctx : CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, fillEdge = true, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
+export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(
+    canvas : HTMLCanvasElement, 
+    ctx : CanvasRenderingContext2D, 
+    imageData : ImageData, 
+    imageToCanvasFactor : number, 
+    diagram: VoronoiDiagram, 
+    fillEdge = true, 
+    drawSeeds = true, 
+    drawCentroids = true, 
+    drawEdges = true, 
+    drawTriangulation = true, 
+    factor: number = 40, 
+    clear : boolean = true,
+    minDotSize = 0.5,
+    maxDotSize = 1.5,
+    lineWidth = 1,
+    coloredStipples = true,
+    compositionMode : CompositionMode = CompositionMode.Darken) {
     if (ctx) {
         const pixelRatio = 2;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -400,7 +418,7 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(canvas : HTM
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge);
+        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge, minDotSize, maxDotSize, lineWidth, coloredStipples, compositionMode);
     }
 }
 
@@ -426,15 +444,34 @@ export function generateVoronoiTexture(diagram: VoronoiDiagram, width: number = 
     return canvas;
 }
 
-function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingContext2D, imageData : ImageData, imageToCanvasFactor : number, diagram: VoronoiDiagram, pixelRatio: number, drawSeeds: boolean, drawCentroids : boolean, drawEdges : boolean, drawTriangulation : boolean, factor: number, fillEdge : boolean) {
+function drawWeightedVoronoiStipplingLinesInCanvas(
+    context: CanvasRenderingContext2D, 
+    imageData : ImageData, 
+    imageToCanvasFactor : number, 
+    diagram: VoronoiDiagram, 
+    pixelRatio: number, 
+    drawSeeds: boolean, 
+    drawCentroids : boolean, 
+    drawEdges : boolean, 
+    drawTriangulation : boolean, 
+    factor: number, 
+    fillEdge : boolean,
+    minDotSize = 0.5,
+    maxDotSize = 1.5,
+    lineWidth = 1,
+    coloredStipples = true,
+    compositionMode : CompositionMode = CompositionMode.Darken
+) {
+
+    context.globalCompositeOperation = compositionMode;
     context.strokeStyle = 'black';
-    context.lineWidth = 1;
+    context.lineWidth = lineWidth;
     context.fillStyle = 'black';
 
     if(drawTriangulation) {
         diagram.triangulationEdges.forEach((edge) => {
             context.strokeStyle = '#fae2e2';
-            context.lineWidth = 1;
+            context.lineWidth = lineWidth;
             context.beginPath();
             context.moveTo((context.canvas.width / 2 + (edge.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.start.y * factor)) / pixelRatio);
             context.lineTo((context.canvas.width / 2 + (edge.end.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.end.y * factor)) / pixelRatio);
@@ -487,9 +524,9 @@ function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingConte
             
             if(stipple && drawSeeds) {
 
-                context.fillStyle = stipple.color;
+                context.fillStyle = coloredStipples ? stipple.color : '#000000';
                 context.beginPath();
-                context.arc(((context.canvas.width / 2) + (factor * cell.seed.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.seed.y)) / pixelRatio, Math.max(1, stipple.radius * 2), 0, Math.PI * 2);
+                context.arc(((context.canvas.width / 2) + (factor * cell.seed.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.seed.y)) / pixelRatio, Math.max(minDotSize, stipple.radius * maxDotSize), 0, Math.PI * 2);
                 context.fill();
 
             }
@@ -499,7 +536,7 @@ function drawWeightedVoronoiStipplingLinesInCanvas(context: CanvasRenderingConte
                 context.fillStyle = '#5cfcff';
 
                 context.beginPath();
-                context.arc(((context.canvas.width / 2) + (factor * cell.centroid.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.centroid.y)) / pixelRatio, 1, 0, Math.PI * 2);
+                context.arc(((context.canvas.width / 2) + (factor * cell.centroid.x)) / pixelRatio, ((context.canvas.height / 2) + (factor * cell.centroid.y)) / pixelRatio, minDotSize, 0, Math.PI * 2);
                 context.fill();
 
             }
