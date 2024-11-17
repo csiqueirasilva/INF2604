@@ -1,9 +1,8 @@
 import { Point3 } from "@geometry/points";
-import { voronoiDiagramFromD3Delaunay } from "@geometry/voronoi";
+import { voronoiDiagramFromD3Delaunay, voronoiDiagramFromD3DelaunayPlainObject } from "@geometry/voronoi";
 
 self.onmessage = (event) => {
-    const { points, width, height } : { points : { x : number, y : number}[], width : number, height : number } = event.data;
-    const rebuiltPoints = points.map(p => new Point3(p.x, p.y, 0));
-    const result = voronoiDiagramFromD3Delaunay(rebuiltPoints, width, height).toPlainObject();
+    const { points, width, height } : { points : [number, number][], width : number, height : number } = event.data;
+    const result = voronoiDiagramFromD3DelaunayPlainObject(points, width, height);
     self.postMessage({ result });
 };

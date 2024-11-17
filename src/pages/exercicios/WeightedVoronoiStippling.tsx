@@ -1,15 +1,15 @@
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import { multiplyPointByScalar } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
-import { drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay } from "@geometry/voronoi";
+import { drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay, VoronoiPlainObject } from "@geometry/voronoi";
 import { folder, useControls } from "leva";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useWindowDimensions } from "react-native";
 
-function extractNonTransparentPoints(data : { width: number, height: number, pixels : Uint8ClampedArray }, targetWidth : number, targetHeight : number) {
+function extractNonTransparentPoints(data : { width: number, height: number, pixels : Uint8ClampedArray }, targetWidth : number, targetHeight : number, numberOfPoints : number = 5000) {
     const points = [];
     
-    const pointsToExtract = 1400;
+    const pointsToExtract = numberOfPoints;
 
     let retryLimit = pointsToExtract * 10;
     let retryCount = 0;
@@ -89,7 +89,8 @@ export default function WeightedVoronoiStippling() {
             'centroids': true,
             'edges': true,
             'triangulation': true,
-            'fillEdge': false
+            'fillEdge': false,
+            'numberOfPoints': { min: 100, max: 20000, value: 1000 }
         })
     })
 
@@ -107,15 +108,16 @@ export default function WeightedVoronoiStippling() {
         if(window.Worker) {
             let worker = new Worker('./voronoiWorker.js');
             worker.onmessage = (event) => {
-                const { result } = event.data;
+                const { result } : { result : VoronoiPlainObject } = event.data;
                 const vd = VoronoiDiagram.fromPlainObject(result);
                 setVoronoi(vd);
-                if(vd && !vd.isCentroidal() && canvasRef.current && imageData) {
-                    const aspect = imageData.width / imageData.height;
-                    const voronoiWidth = myTargetSpace;
-                    const voronoiHeight = myTargetSpace / aspect;
+                if(vd && canvasRef.current && imageData) {
                     let pointsIt = vd.getWeightedVoronoiStipples(imageData, myTargetSpace);
-                    workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: width, height: height });
+                    const seeds = result.shapes.map(x => x.seed);
+                    const alreadyWeighted = pointsIt.every((x, idx) => ((seeds[idx].x - x.x) + (seeds[idx].y - seeds[idx].y)) <= 1E-8);
+                    if(!alreadyWeighted) {
+                        workerRef.current?.postMessage({ points: pointsIt.map(point => [ point.x, point.y ]), width: width, height: height });
+                    }
                 }
             };
             workerRef.current = worker;
@@ -137,21 +139,18 @@ export default function WeightedVoronoiStippling() {
                     const aspect = data.width / data.height;
                     const targetWidth = myTargetSpace;
                     const targetHeight = myTargetSpace / aspect;
-                    let p = extractNonTransparentPoints(data, targetWidth, targetHeight);
+                    let p = extractNonTransparentPoints(data, targetWidth, targetHeight, values['numberOfPoints']);
                     setPoints(p);
                 })
         }
-    }, [ values['image'], width, height ]);
+    }, [ values['image'], width, height, values['numberOfPoints'] ]);
 
     useEffect(() => {
         try {
             if(canvasRef.current && imageData) {
                 let setPoints = points;
-                const aspect = imageData.width / imageData.height;
-                const voronoiWidth = myTargetSpace;
-                const voronoiHeight = myTargetSpace / aspect;
                 let pointsIt = setPoints;
-                workerRef.current?.postMessage({ points: pointsIt.map(point => ({ x: point.x, y: point.y })), width: width, height: height });
+                workerRef.current?.postMessage({ points: pointsIt.map(point => [ point.x, point.y ]), width: width, height: height });
             }
         } catch (e) {
             console.error(e)

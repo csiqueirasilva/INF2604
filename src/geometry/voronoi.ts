@@ -14,6 +14,17 @@ import * as PIXI from 'pixi.js';
 
 const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
 
+export interface VoronoiPlainObject { 
+    shapes : { 
+        seed : { x : number, y : number }, 
+        points: { x : number, y : number }[]
+    }[], 
+    edges: { 
+        start: { x : number, y : number }, 
+        end: { x : number, y : number } 
+    }[] 
+}
+
 export function fromVoronoiCanvasStipple(x : number, y : number, targetWidth : number, targetHeight : number, canvasWidth : number, canvasHeight : number) : Point3 {
     x = x / CANVAS_VORONOI_STIPPLE_SCALE;
     y = y / CANVAS_VORONOI_STIPPLE_SCALE;
@@ -157,12 +168,11 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
         }
         return ret;
     }
-    public toPlainObject() {
+    public toPlainObject() : VoronoiPlainObject {
         return {
             shapes: this.shapes.map(shape => ({
                 seed: { x: shape.seed.x, y: shape.seed.y },
-                points: shape.points.map(p => ({ x: p.x, y: p.y })),
-                centroid: { x: shape.centroid.x, y: shape.centroid.y }
+                points: shape.points.map(p => ({ x: p.x, y: p.y }))
             })),
             edges: this.triangulationEdges.map(edge => ({
                 start: ({ x: edge.start.x, y: edge.start.y }),
@@ -170,7 +180,7 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
             }))
         };
     }
-    static fromPlainObject(plain : { shapes : { seed : { x : number, y : number }, points: { x : number, y : number }[], centroid: { x : number, y : number } }[], edges: { start: { x : number, y : number }, end: { x : number, y : number } }[] }) : VoronoiDiagram {
+    static fromPlainObject(plain : VoronoiPlainObject) : VoronoiDiagram {
         const ret = new VoronoiDiagram([]);
         ret.triangulationEdges = plain.edges.map(ed => new PolygonEdge( new Point3(ed.start.x, ed.start.y, 0), new Point3(ed.end.x, ed.end.y, 0) ));
         ret.shapes = plain.shapes.map(sp => new VoronoiCell( new Point3(sp.seed.x, sp.seed.y), sp.points.map(p => new Point3(p.x, p.y, 0)), true ));
@@ -202,6 +212,30 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
                     ret.triangulationEdges.push(edge);
                 }
             }
+        }
+        return ret;
+    }
+    static buildWithD3DelaunayPlainObject = (proposedPolygon: [number, number][], width: number = 8, height: number = 8) : VoronoiPlainObject => {
+        const delaunay = Delaunay.from(proposedPolygon);
+        const ret : VoronoiPlainObject = {
+            shapes: [],
+            edges: []
+        };
+        const d3Voronoi = delaunay.voronoi([-width, -height, width, height ]);
+        for (let i = 0; i < delaunay.points.length / 2; i++) {
+            const seed = new Point3(delaunay.points[2 * i], delaunay.points[2 * i + 1], 0);
+            const d3Cell = d3Voronoi.cellPolygon(i);
+            if (!d3Cell) continue;
+            const points = Array.from(d3Cell, ([x, y]) => new Point3(x, y, 0));
+            ret.shapes.push({ seed: { x: seed.x, y: seed.y }, points: points.map(x => ({ x: x.x, y: x.y }))})
+        }
+        for (let t = 0; t < delaunay.triangles.length; t += 3) {
+            const p0 = { x: delaunay.points[2 * delaunay.triangles[t]], y: delaunay.points[2 * delaunay.triangles[t] + 1] };
+            const p1 = { x: delaunay.points[2 * delaunay.triangles[t + 1]], y: delaunay.points[2 * delaunay.triangles[t + 1] + 1] };
+            const p2 = { x: delaunay.points[2 * delaunay.triangles[t + 2]], y: delaunay.points[2 * delaunay.triangles[t + 2] + 1] };
+            ret.edges.push({ start: p0, end: p1 });
+            ret.edges.push({ start: p1, end: p2 });
+            ret.edges.push({ start: p2, end: p0 });
         }
         return ret;
     }
@@ -292,6 +326,10 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
 
         return ret;
     }
+}
+
+export function voronoiDiagramFromD3DelaunayPlainObject(proposedPolygon: [number,number][], width: number = 8, height: number = 8): VoronoiPlainObject {
+    return VoronoiDiagram.buildWithD3DelaunayPlainObject(proposedPolygon, width, height);
 }
 
 export function voronoiDiagramFromD3Delaunay(proposedPolygon: Point3[], width: number = 8, height: number = 8): VoronoiDiagram {
