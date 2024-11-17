@@ -92,7 +92,7 @@ export default function WeightedVoronoiStippling() {
             'triangulation': true,
             'fillEdge': false,
             'coloredStipples': true,
-            'numberOfPoints': { min: 100, max: 20000, value: 1000 },
+            'numberOfPoints': { min: 3, max: 20000, value: 1000 },
             'minDotSize': { min: 0.25, max: 3, value: 0.5, step: 0.05 },
             'maxDotSize': { min: 0.25, max: 3, value: 1.5, step: 0.05 },
             'lineWidth': { min: 0.15, max: 2, value: 0.15, step: 0.05 },
