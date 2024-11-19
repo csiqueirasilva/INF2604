@@ -2862,48 +2862,6 @@
 	    return Math.sqrt(dot);
 	}
 
-	class Rectangle {
-	    x;
-	    y;
-	    width;
-	    height;
-	    constructor(x, // Center x
-	    y, // Center y
-	    width, // Half width
-	    height // Half height
-	    ) {
-	        this.x = x;
-	        this.y = y;
-	        this.width = width;
-	        this.height = height;
-	    }
-	    // Check if a point is within this rectangle
-	    contains(point) {
-	        return (point.x >= this.x - this.width &&
-	            point.x <= this.x + this.width &&
-	            point.y >= this.y - this.height &&
-	            point.y <= this.y + this.height);
-	    }
-	    // Check if this rectangle intersects with another rectangle
-	    intersects(other) {
-	        return !(other.x - other.width > this.x + this.width ||
-	            other.x + other.width < this.x - this.width ||
-	            other.y - other.height > this.y + this.height ||
-	            other.y + other.height < this.y - this.height);
-	    }
-	    // Check if this rectangle intersects with a BoundingBox2d
-	    intersectsBoundingBox(bbox) {
-	        const rectMinX = this.x - this.width;
-	        const rectMaxX = this.x + this.width;
-	        const rectMinY = this.y - this.height;
-	        const rectMaxY = this.y + this.height;
-	        return !(bbox.minX > rectMaxX ||
-	            bbox.maxX < rectMinX ||
-	            bbox.minY > rectMaxY ||
-	            bbox.maxY < rectMinY);
-	    }
-	}
-
 	function calcCircumcircle(p1, p2, p3) {
 	    errorIfPointsColinear3(p1, p2, p3);
 	    const mid1 = new Point3((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, (p1.z + p2.z) / 2);
@@ -3745,7 +3703,7 @@
 	    nodes = [];
 	    shapes = [];
 	    tree;
-	    constructor(shapes, boundary = new Rectangle(0, 0, 1000, 1000), capacity = 4) {
+	    constructor(shapes) {
 	        this.tree = new MyRBush();
 	        for (const t of shapes) {
 	            this.addShape(t);
@@ -5288,12 +5246,83 @@
 	    CompositionMode["Color"] = "color";
 	})(CompositionMode || (CompositionMode = {}));
 
+	function padHeatMap(heatMap, width, height) {
+	    const paddedHeatMap = Array.from({ length: height + 2 }, () => Array(width + 2).fill(0));
+	    // Copy the original heat map into the padded version
+	    for (let y = 0; y < height; y++) {
+	        for (let x = 0; x < width; x++) {
+	            paddedHeatMap[y + 1][x + 1] = heatMap[y][x];
+	        }
+	    }
+	    // Handle top and bottom edges (mirror padding)
+	    for (let x = 0; x < width; x++) {
+	        paddedHeatMap[0][x + 1] = heatMap[0][x]; // Top edge
+	        paddedHeatMap[height + 1][x + 1] = heatMap[height - 1][x]; // Bottom edge
+	    }
+	    // Handle left and right edges (mirror padding)
+	    for (let y = 0; y < height; y++) {
+	        paddedHeatMap[y + 1][0] = heatMap[y][0]; // Left edge
+	        paddedHeatMap[y + 1][width + 1] = heatMap[y][width - 1]; // Right edge
+	    }
+	    // Handle corners (mirror padding)
+	    paddedHeatMap[0][0] = heatMap[0][0]; // Top-left
+	    paddedHeatMap[0][width + 1] = heatMap[0][width - 1]; // Top-right
+	    paddedHeatMap[height + 1][0] = heatMap[height - 1][0]; // Bottom-left
+	    paddedHeatMap[height + 1][width + 1] = heatMap[height - 1][width - 1]; // Bottom-right
+	    return paddedHeatMap;
+	}
+	function heatDiffusionStep(heatMap, width, height) {
+	    const paddedHeatMap = padHeatMap(heatMap, width, height); // Pad the heat map
+	    const newHeatMap = Array.from({ length: height }, () => Array(width).fill(0));
+	    const kernel = [
+	        [0, 1, 0],
+	        [1, -4, 1],
+	        [0, 1, 0]
+	    ]; // Discrete Laplacian kernel
+	    for (let y = 0; y < height; y++) {
+	        for (let x = 0; x < width; x++) {
+	            let sum = 0;
+	            for (let ky = -1; ky <= 1; ky++) {
+	                for (let kx = -1; kx <= 1; kx++) {
+	                    sum += paddedHeatMap[y + 1 + ky][x + 1 + kx] * kernel[ky + 1][kx + 1];
+	                }
+	            }
+	            newHeatMap[y][x] = heatMap[y][x] + 0.25 * sum; // Diffusion factor
+	        }
+	    }
+	    return newHeatMap;
+	}
+	function initializeHeatMap(imageData) {
+	    const width = imageData.width;
+	    const height = imageData.height;
+	    const heatMap = Array.from({ length: height }, () => Array(width).fill(0));
+	    for (let y = 0; y < height; y++) {
+	        for (let x = 0; x < width; x++) {
+	            const index = (y * width + x) * 4;
+	            const r = imageData.data[index];
+	            const g = imageData.data[index + 1];
+	            const b = imageData.data[index + 2];
+	            const brightness = (r + g + b) / 3; // Initial heat based on brightness
+	            heatMap[y][x] = brightness / 255; // Normalize to [0, 1]
+	        }
+	    }
+	    return heatMap;
+	}
+	function simulateHeatDiffusion(imageData, iterations) {
+	    let heatMap = initializeHeatMap(imageData);
+	    const width = imageData.width;
+	    const height = imageData.height;
+	    for (let i = 0; i < iterations; i++) {
+	        heatMap = heatDiffusionStep(heatMap, width, height);
+	    }
+	    return heatMap;
+	}
+
 	var VoronoiWeightMethod;
 	(function (VoronoiWeightMethod) {
 	    VoronoiWeightMethod["FULL_WEIGHT"] = "full-weight";
 	    VoronoiWeightMethod["ZERO_WEIGHT"] = "zero-weight";
 	    VoronoiWeightMethod["SIMPLE_BRIGHTNESS"] = "simple-brightness";
-	    VoronoiWeightMethod["SIMPLE_DARKNESS"] = "simple-darkness";
 	    VoronoiWeightMethod["LUMINANCE"] = "luminance";
 	    VoronoiWeightMethod["ALPHA_PRIORITY"] = "alpha-priority";
 	    VoronoiWeightMethod["CONTRAST"] = "contrast";
@@ -5304,9 +5333,12 @@
 	    VoronoiWeightMethod["GRADIENT_MAGNITUDE"] = "gradient-magnitude";
 	    VoronoiWeightMethod["SATURATION_AND_LUMINANCE"] = "saturation-and-luminance";
 	    VoronoiWeightMethod["ENTROPY"] = "entropy";
-	    VoronoiWeightMethod["PER_CHANNEL"] = "per-channel";
+	    VoronoiWeightMethod["RED_CHANNEL"] = "red-channel";
+	    VoronoiWeightMethod["GREEN_CHANNEL"] = "green-channel";
+	    VoronoiWeightMethod["BLUE_CHANNEL"] = "blue-channel";
+	    VoronoiWeightMethod["HEAT_DIFFUSION"] = "heat-diffusion";
 	})(VoronoiWeightMethod || (VoronoiWeightMethod = {}));
-	function calculateVoronoiWeightByType(x, y, r, g, b, a, imageData, weightType = VoronoiWeightMethod.SIMPLE_BRIGHTNESS) {
+	function calculateVoronoiWeightByType(x, y, r, g, b, a, imageData, weightType = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, heatmap = undefined) {
 	    let ret = 0;
 	    switch (weightType) {
 	        case VoronoiWeightMethod.FULL_WEIGHT: {
@@ -5322,9 +5354,9 @@
 	            ret = 1 - (value / 255);
 	            break;
 	        }
-	        case VoronoiWeightMethod.SIMPLE_DARKNESS: {
-	            const value = (r + g + b) / 3;
-	            ret = (value / 255);
+	        case VoronoiWeightMethod.INTENSITY: {
+	            const intensity = (r + g + b) / 3;
+	            ret = intensity / 255;
 	            break;
 	        }
 	        case VoronoiWeightMethod.LUMINANCE: {
@@ -5342,7 +5374,7 @@
 	            break;
 	        }
 	        case VoronoiWeightMethod.HUE: {
-	            const hue = Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b);
+	            const hue = Math.atan2(Math.sqrt(3) * (g - b), 2 * (r - g - b));
 	            ret = hue / (2 * Math.PI);
 	            break;
 	        }
@@ -5359,11 +5391,6 @@
 	            const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
 	            const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
 	            ret = distance / maxDistance;
-	            break;
-	        }
-	        case VoronoiWeightMethod.INTENSITY: {
-	            const intensity = (r + g + b) / 3;
-	            ret = intensity / 255;
 	            break;
 	        }
 	        case VoronoiWeightMethod.GRADIENT_MAGNITUDE: {
@@ -5383,11 +5410,26 @@
 	            ret = calculateLocalEntropy(x, y, imageData);
 	            break;
 	        }
-	        case VoronoiWeightMethod.PER_CHANNEL: {
-	            const weightR = 0.5 * (255 - r) / 255;
-	            const weightG = 0.3 * (255 - g) / 255;
-	            const weightB = 0.2 * (255 - b) / 255;
-	            ret = weightR + weightG + weightB;
+	        case VoronoiWeightMethod.RED_CHANNEL: {
+	            ret = r / 255;
+	            break;
+	        }
+	        case VoronoiWeightMethod.GREEN_CHANNEL: {
+	            ret = g / 255;
+	            break;
+	        }
+	        case VoronoiWeightMethod.BLUE_CHANNEL: {
+	            ret = b / 255;
+	            break;
+	        }
+	        case VoronoiWeightMethod.HEAT_DIFFUSION: {
+	            if (heatmap && typeof heatmap[y] !== "undefined" && typeof heatmap[y][x] !== "undefined") {
+	                const weight = heatmap[y][x];
+	                ret = Math.pow(1 - weight, 2);
+	            }
+	            else {
+	                ret = 0;
+	            }
 	            break;
 	        }
 	    }
@@ -5493,7 +5535,7 @@
 	        }
 	        return ret;
 	    }
-	    getWeightedCentroidBasedOnImage = (imageData, factor, weightType = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold = undefined) => {
+	    getWeightedCentroidBasedOnImage = (imageData, factor, weightType = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold = undefined, heatmap = undefined) => {
 	        if (this.weightedCentroid)
 	            return this.weightedCentroid;
 	        const aspect = imageData.width / imageData.height;
@@ -5508,7 +5550,7 @@
 	        const b = imageData.data[index + 2];
 	        const a = imageData.data[index + 3];
 	        const stippleColor = new Color(r / 255, g / 255, b / 255);
-	        const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType);
+	        const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType, heatmap);
 	        const ret = shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold) ? null : new WeightedVoronoiStipple(coordX, coordY, weight, '#' + stippleColor.getHexString());
 	        this.weightedCentroid = ret;
 	        return ret;
@@ -5539,6 +5581,10 @@
 	            const p = fromVoronoiCanvasStipple(x.x, x.y, factorX, factorY, imageData.width, imageData.height);
 	            return [p.x, p.y];
 	        });
+	        let heatmap = undefined;
+	        if (weightType === VoronoiWeightMethod.HEAT_DIFFUSION) {
+	            heatmap = simulateHeatDiffusion(imageData, 10);
+	        }
 	        const delaunay = Delaunay.from(points);
 	        const centroids = new Array(this.shapes.length);
 	        for (let i = 0; i < centroids.length; i++) {
@@ -5553,7 +5599,7 @@
 	                const r = imageData.data[index + 0];
 	                const g = imageData.data[index + 1];
 	                const b = imageData.data[index + 2];
-	                const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType);
+	                const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType, heatmap);
 	                if (!shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold)) {
 	                    delaunayIndex = delaunay.find(i, j, delaunayIndex);
 	                    centroids[delaunayIndex].x += i * weight;
