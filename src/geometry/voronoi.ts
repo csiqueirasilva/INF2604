@@ -13,6 +13,172 @@ import { Delaunay, Voronoi } from "d3-delaunay";
 import * as PIXI from 'pixi.js';
 import { CompositionMode } from "@components/CanvasCompositionMode";
 
+export const VORONOI_DEFAULT_CANVAS_FACTOR = 40;
+
+export enum VoronoiWeightMethod {
+    FULL_WEIGHT = "full-weight",
+    ZERO_WEIGHT = "zero-weight",
+    SIMPLE_BRIGHTNESS = "simple-brightness",
+    LUMINANCE = "luminance",
+    ALPHA_PRIORITY = "alpha-priority",
+    CONTRAST = "contrast",
+    HUE = "hue",
+    SATURATION = "saturation",
+    DISTANCE_FROM_CENTER = "distance-from-center",
+    INTENSITY = "intensity",
+    GRADIENT_MAGNITUDE = "gradient-magnitude",
+    SATURATION_AND_LUMINANCE = "saturation-and-luminance",
+    ENTROPY = "entropy",
+    RED_CHANNEL = "red-channel",
+    GREEN_CHANNEL = "green-channel",
+    BLUE_CHANNEL = "blue-channel",
+}
+
+function calculateVoronoiWeightByType(
+    x : number, y : number, 
+    r : number, g : number, b : number, a : number, 
+    imageData : ImageData, 
+    weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS) {
+    let ret = 0;
+    switch (weightType) {
+        case VoronoiWeightMethod.FULL_WEIGHT: {
+            ret = 1;
+            break;
+        }
+        case VoronoiWeightMethod.ZERO_WEIGHT: {
+            ret = 0;
+            break;
+        }
+        case VoronoiWeightMethod.SIMPLE_BRIGHTNESS: {
+            const value = (r + g + b) / 3;
+            ret = 1 - (value / 255);
+            break;
+        }
+        case VoronoiWeightMethod.INTENSITY: {
+            const intensity = (r + g + b) / 3;
+            ret = intensity / 255;
+            break;
+        }
+        case VoronoiWeightMethod.LUMINANCE: { 
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            ret = 1 - (luminance / 255);
+            break;
+        }
+        case VoronoiWeightMethod.ALPHA_PRIORITY: { 
+            ret = 1 - (a / 255);
+            break;
+        }
+        case VoronoiWeightMethod.CONTRAST: {
+            const contrast = Math.abs(r - g) + Math.abs(g - b) + Math.abs(b - r);
+            ret = contrast / 255;
+            break;
+        }
+        case VoronoiWeightMethod.HUE: {
+            const hue = Math.atan2(Math.sqrt(3) * (g - b), 2 * (r - g - b));
+            ret = hue / (2 * Math.PI);
+            break;
+        }
+        case VoronoiWeightMethod.SATURATION: {
+            const maxVal = Math.max(r, g, b);
+            const minVal = Math.min(r, g, b);
+            const saturation = maxVal === 0 ? 0 : (maxVal - minVal) / maxVal;
+            ret = saturation;
+            break;
+        }
+        case VoronoiWeightMethod.DISTANCE_FROM_CENTER: {
+            const centerX = imageData.width / 2;
+            const centerY = imageData.height / 2;
+            const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+            const maxDistance = Math.sqrt(centerX ** 2 + centerY ** 2);
+            ret = distance / maxDistance;
+            break;
+        }
+        case VoronoiWeightMethod.GRADIENT_MAGNITUDE: {
+            const dx = Math.abs(r - g); // Example: Difference between two neighbors
+            const dy = Math.abs(g - b);
+            const gradient = Math.sqrt(dx ** 2 + dy ** 2);
+            ret = gradient / 255;
+            break;
+        }
+        case VoronoiWeightMethod.SATURATION_AND_LUMINANCE: {
+            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            const saturation = (Math.max(r, g, b) - Math.min(r, g, b)) / Math.max(r, g, b);
+            ret = 0.5 * (1 - luminance / 255) + 0.5 * saturation;
+            break;
+        }
+        case VoronoiWeightMethod.ENTROPY: {
+            ret = calculateLocalEntropy(x, y, imageData);
+            break;
+        }
+        case VoronoiWeightMethod.RED_CHANNEL: {
+            ret = r / 255;
+            break;
+        }
+        case VoronoiWeightMethod.GREEN_CHANNEL: {
+            ret = g / 255;
+            break;
+        }
+        case VoronoiWeightMethod.BLUE_CHANNEL: {
+            ret = b / 255;
+            break;
+        }
+    }
+    return ret;
+}
+
+function shouldDiscardWeightedVoronoiStipple(weight : number, alpha : number, threshold : number|undefined) : boolean {
+    return alpha === 0 || (typeof threshold !== "undefined" && weight <= threshold);
+}
+
+const MAX_ENTROPY = 8;
+
+function calculateLocalEntropy(x: number, y: number, imageData: ImageData): number {
+    const neighborhoodSize = 3; // Size of the window (3x3)
+    const halfSize = Math.floor(neighborhoodSize / 2);
+    const grayscaleValues: number[] = [];
+    const width = imageData.width;
+    const height = imageData.height;
+
+    // Extract the neighborhood
+    for (let j = -halfSize; j <= halfSize; j++) {
+        for (let i = -halfSize; i <= halfSize; i++) {
+            const nx = x + i;
+            const ny = y + j;
+
+            // Skip out-of-bound pixels
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+
+            const index = (ny * width + nx) * 4; // Get the pixel index
+            const r = imageData.data[index];
+            const g = imageData.data[index + 1];
+            const b = imageData.data[index + 2];
+            const grayscale = Math.round((r + g + b) / 3); // Convert to grayscale
+            grayscaleValues.push(grayscale);
+        }
+    }
+
+    // Calculate frequency of each grayscale value (bucketed by 16 levels)
+    const bucketCount = 16; // Number of intensity buckets
+    const histogram = new Array(bucketCount).fill(0);
+    grayscaleValues.forEach(value => {
+        const bucket = Math.floor((value / 255) * (bucketCount - 1)); // Map to bucket
+        histogram[bucket]++;
+    });
+
+    // Calculate probabilities
+    const totalPixels = grayscaleValues.length;
+    const probabilities = histogram.map(count => count / totalPixels);
+
+    // Calculate entropy
+    let entropy = 0;
+    probabilities.forEach(p => {
+        if (p > 0) entropy -= p * Math.log2(p);
+    });
+
+    // Normalize entropy
+    return entropy / MAX_ENTROPY; // Normalize to [0, 1]
+}
+
 export const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
 
 export interface VoronoiPlainObject { 
@@ -86,7 +252,7 @@ export class VoronoiCell extends PolygonShape {
         return ret;
     }
 
-    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number): WeightedVoronoiStipple|null => {
+    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number, weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold: number|undefined = undefined): WeightedVoronoiStipple|null => {
         if(this.weightedCentroid) return this.weightedCentroid;
         const aspect = imageData.width / imageData.height;
         const factorX = factor;
@@ -100,8 +266,8 @@ export class VoronoiCell extends PolygonShape {
         const b = imageData.data[index + 2];
         const a = imageData.data[index + 3];
         const stippleColor = new Color(r / 255, g / 255, b / 255);
-        const brightness = 1 - (((r+g+b)/3) / 255);
-        const ret = a === 0 ? null : new WeightedVoronoiStipple(coordX, coordY, brightness, '#' + stippleColor.getHexString());
+        const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType);
+        const ret = shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold) ? null : new WeightedVoronoiStipple(coordX, coordY, weight, '#' + stippleColor.getHexString());
         this.weightedCentroid = ret;
         return ret;
     }
@@ -124,7 +290,7 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
         }
         return ret;
     }
-    public getWeightedVoronoiStipples = (imageData : ImageData, factor : number): Point3[] => {
+    public getWeightedVoronoiStipples = (imageData : ImageData, factor : number, weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold: number|undefined = undefined): Point3[] => {
         const ret: Point3[] = [];
         const aspect = imageData.width / imageData.height;
         const factorX = factor;
@@ -144,17 +310,16 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
             for(let j = 0; j < imageData.height; j++) {
                 const index = (j * imageData.width + i) * 4;
                 const a = imageData.data[index + 3];
-                if(a !== 0) {
                     const r = imageData.data[index + 0];
                     const g = imageData.data[index + 1];
                     const b = imageData.data[index + 2];
-                    const value = (r + g + b) / 3;
-                    const weight = 1 - (value / 255);
-                    delaunayIndex = delaunay.find(i, j, delaunayIndex);
-                    centroids[delaunayIndex].x += i * weight;
-                    centroids[delaunayIndex].y += j * weight;
-                    weights[delaunayIndex] += weight;
-                }
+                    const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType);
+                    if(!shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold)) { 
+                        delaunayIndex = delaunay.find(i, j, delaunayIndex);
+                        centroids[delaunayIndex].x += i * weight;
+                        centroids[delaunayIndex].y += j * weight;
+                        weights[delaunayIndex] += weight;
+                    }
             }
         }
         for(let i = 0; i < centroids.length; i++) {
@@ -404,13 +569,15 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(
     drawCentroids = true, 
     drawEdges = true, 
     drawTriangulation = true, 
-    factor: number = 40, 
+    factor: number = VORONOI_DEFAULT_CANVAS_FACTOR, 
     clear : boolean = true,
     minDotSize = 0.5,
     maxDotSize = 1.5,
     lineWidth = 1,
     coloredStipples = true,
-    compositionMode : CompositionMode = CompositionMode.Darken) {
+    compositionMode : CompositionMode = CompositionMode.Darken,
+    weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS,
+    discardThreshold : number|undefined = undefined) {
     if (ctx) {
         const pixelRatio = 2;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -418,11 +585,11 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge, minDotSize, maxDotSize, lineWidth, coloredStipples, compositionMode);
+        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge, minDotSize, maxDotSize, lineWidth, coloredStipples, compositionMode, weightType, discardThreshold);
     }
 }
 
-export function drawVoronoiTextureOnExistingCanvas(canvas : HTMLCanvasElement, diagram: VoronoiDiagram, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40, clear : boolean = true) {
+export function drawVoronoiTextureOnExistingCanvas(canvas : HTMLCanvasElement, diagram: VoronoiDiagram, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = VORONOI_DEFAULT_CANVAS_FACTOR, clear : boolean = true) {
     const ctx = canvas.getContext('2d');
 
     if (ctx) {
@@ -436,7 +603,7 @@ export function drawVoronoiTextureOnExistingCanvas(canvas : HTMLCanvasElement, d
     }
 }
 
-export function generateVoronoiTexture(diagram: VoronoiDiagram, width: number = 512, height: number = 512, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = 40): HTMLCanvasElement {
+export function generateVoronoiTexture(diagram: VoronoiDiagram, width: number = 512, height: number = 512, drawSeeds = true, drawCentroids = true, drawEdges = true, drawTriangulation = true, factor: number = VORONOI_DEFAULT_CANVAS_FACTOR): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -460,7 +627,9 @@ function drawWeightedVoronoiStipplingLinesInCanvas(
     maxDotSize = 1.5,
     lineWidth = 1,
     coloredStipples = true,
-    compositionMode : CompositionMode = CompositionMode.Darken
+    compositionMode : CompositionMode = CompositionMode.Darken,
+    weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS,
+    discardThreshold : number|undefined = undefined
 ) {
 
     context.globalCompositeOperation = compositionMode;
@@ -481,7 +650,7 @@ function drawWeightedVoronoiStipplingLinesInCanvas(
 
     diagram.shapes.forEach((cell, idx) => {
 
-        const stipple = cell.getWeightedCentroidBasedOnImage(imageData, imageToCanvasFactor);
+        const stipple = cell.getWeightedCentroidBasedOnImage(imageData, imageToCanvasFactor, weightType, discardThreshold);
 
         if(cell.original) {
 
@@ -621,7 +790,7 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvasPixi(
     drawCentroids = true,
     drawEdges = true,
     drawTriangulation = true,
-    factor: number = 40
+    factor: number = VORONOI_DEFAULT_CANVAS_FACTOR
 ) {
     g.clear();
     drawWeightedVoronoiStipplingLinesInPIXI(g, imageData, imageToCanvasFactor, diagram, 1, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, canvasWidth, canvasHeight);

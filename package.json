@@ -7,7 +7,8 @@
     "test": "jest --roots tests",
     "lint": "expo lint",
     "deploy": "npx tailwindcss -i ./global.css -o ./node_modules/.cache/nativewind/global.css.web.css && gh-pages -t -d dist",
-    "predeploy": "expo export -p web"
+    "predeploy": "expo export -p web",
+    "build-worker": "rollup -c rollup.worker.config.mjs"
   },
   "jest": {
     "preset": "jest-expo"
