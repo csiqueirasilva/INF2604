@@ -12,6 +12,8 @@ import { clip } from 'liang-barsky';
 import { Delaunay, Voronoi } from "d3-delaunay";
 import * as PIXI from 'pixi.js';
 import { CompositionMode } from "@components/CanvasCompositionMode";
+import { simulateHeatDiffusion } from "@components/heatdiffusion";
+import { Rectangle } from "@geometry/quadtree";
 
 export const VORONOI_DEFAULT_CANVAS_FACTOR = 40;
 
@@ -32,13 +34,15 @@ export enum VoronoiWeightMethod {
     RED_CHANNEL = "red-channel",
     GREEN_CHANNEL = "green-channel",
     BLUE_CHANNEL = "blue-channel",
+    HEAT_DIFFUSION = "heat-diffusion"
 }
 
 function calculateVoronoiWeightByType(
     x : number, y : number, 
     r : number, g : number, b : number, a : number, 
     imageData : ImageData, 
-    weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS) {
+    weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS,
+    heatmap : number[][]|undefined = undefined) {
     let ret = 0;
     switch (weightType) {
         case VoronoiWeightMethod.FULL_WEIGHT: {
@@ -120,6 +124,15 @@ function calculateVoronoiWeightByType(
         }
         case VoronoiWeightMethod.BLUE_CHANNEL: {
             ret = b / 255;
+            break;
+        }
+        case VoronoiWeightMethod.HEAT_DIFFUSION: {
+            if(heatmap && typeof heatmap[y] !== "undefined" && typeof heatmap[y][x] !== "undefined") {
+                const weight = heatmap[y][x];
+                ret = Math.pow(1 - weight, 2);
+            } else {
+                ret = 0;
+            }
             break;
         }
     }
@@ -252,7 +265,7 @@ export class VoronoiCell extends PolygonShape {
         return ret;
     }
 
-    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number, weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold: number|undefined = undefined): WeightedVoronoiStipple|null => {
+    public getWeightedCentroidBasedOnImage = (imageData : ImageData, factor : number, weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS, discardThreshold: number|undefined = undefined, heatmap : undefined|number[][] = undefined): WeightedVoronoiStipple|null => {
         if(this.weightedCentroid) return this.weightedCentroid;
         const aspect = imageData.width / imageData.height;
         const factorX = factor;
@@ -266,7 +279,7 @@ export class VoronoiCell extends PolygonShape {
         const b = imageData.data[index + 2];
         const a = imageData.data[index + 3];
         const stippleColor = new Color(r / 255, g / 255, b / 255);
-        const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType);
+        const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType, heatmap);
         const ret = shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold) ? null : new WeightedVoronoiStipple(coordX, coordY, weight, '#' + stippleColor.getHexString());
         this.weightedCentroid = ret;
         return ret;
@@ -299,6 +312,10 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
             const p = fromVoronoiCanvasStipple(x.x, x.y, factorX, factorY, imageData.width, imageData.height)
             return [ p.x, p.y ];
         }) as ArrayLike<Point>;
+        let heatmap : number[][]|undefined = undefined;
+        if(weightType === VoronoiWeightMethod.HEAT_DIFFUSION) {
+            heatmap = simulateHeatDiffusion(imageData, 10);
+        }
         const delaunay = Delaunay.from(points);
         const centroids = new Array(this.shapes.length);
         for(let i = 0; i < centroids.length; i++) {
@@ -313,7 +330,7 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
                     const r = imageData.data[index + 0];
                     const g = imageData.data[index + 1];
                     const b = imageData.data[index + 2];
-                    const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType);
+                    const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType, heatmap);
                     if(!shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold)) { 
                         delaunayIndex = delaunay.find(i, j, delaunayIndex);
                         centroids[delaunayIndex].x += i * weight;
@@ -648,9 +665,14 @@ function drawWeightedVoronoiStipplingLinesInCanvas(
         });
     }
 
+    let heatmap : number[][]|undefined = undefined;
+    if(weightType === VoronoiWeightMethod.HEAT_DIFFUSION) {
+        heatmap = simulateHeatDiffusion(imageData, 10);
+    }
+
     diagram.shapes.forEach((cell, idx) => {
 
-        const stipple = cell.getWeightedCentroidBasedOnImage(imageData, imageToCanvasFactor, weightType, discardThreshold);
+        const stipple = cell.getWeightedCentroidBasedOnImage(imageData, imageToCanvasFactor, weightType, discardThreshold, heatmap);
 
         if(cell.original) {
 

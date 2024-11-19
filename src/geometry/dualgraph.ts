@@ -181,7 +181,7 @@ export class DualGraph<T extends PolygonShape> {
     public shapes : T[] = [];
     private tree: MyRBush<T>;
 
-    constructor(shapes : T[], boundary = new Rectangle(0, 0, 1000, 1000), capacity = 4) {
+    constructor(shapes : T[]) {
         this.tree = new MyRBush<T>();
         for(const t of shapes) {
             this.addShape(t);
