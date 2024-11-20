@@ -99,8 +99,8 @@ export default function WeightedVoronoiStippling() {
             'coloredStipples': true,
             'skipUnclearPoints': false,
             'numberOfPoints': { min: 3, max: 20000, value: 1000 },
-            'minDotSize': { min: 0.25, max: 3, value: 0.5, step: 0.05 },
-            'maxDotSize': { min: 0.25, max: 3, value: 1.5, step: 0.05 },
+            'minDotSize': { min: 0, max: 3, value: 0.5, step: 0.01 },
+            'maxDotSize': { min: 0, max: 3, value: 1.5, step: 0.01 },
             'lineWidth': { min: 0.15, max: 2, value: 0.15, step: 0.05 },
             'imageOpacity': { min: 0, max: 1, value: 0.15, step: 0.05 },
             'compositionMode': { options:  Object.entries(CompositionMode).map(x => x[1]), value: CompositionMode.Darken },
@@ -118,7 +118,7 @@ export default function WeightedVoronoiStippling() {
 
     const drawImageOnCanvas = useCallback((opacity = 0.5) => {
         let ctx = canvasRef.current?.getContext('2d', { alpha: true });
-        if(ctx && imageData && cachedResizedImage) {
+        if(ctx && imageData && cachedResizedImage && width && height) {
             const aspect = imageData.width / imageData.height;
             const targetWidthSrc = myTargetSpace;
             const targetHeightSrc = myTargetSpace / aspect;
