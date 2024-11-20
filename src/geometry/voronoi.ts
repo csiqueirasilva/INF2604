@@ -161,10 +161,7 @@ function calculateLocalEntropy(x: number, y: number, imageData: ImageData): numb
             // Skip out-of-bound pixels
             if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
 
-            const index = (ny * width + nx) * 4; // Get the pixel index
-            const r = imageData.data[index];
-            const g = imageData.data[index + 1];
-            const b = imageData.data[index + 2];
+            const { r, g, b } = getRGBAFromImageData(imageData, nx, ny);
             const grayscale = Math.round((r + g + b) / 3); // Convert to grayscale
             grayscaleValues.push(grayscale);
         }
@@ -192,6 +189,7 @@ function calculateLocalEntropy(x: number, y: number, imageData: ImageData): numb
     return entropy / MAX_ENTROPY; // Normalize to [0, 1]
 }
 
+export const CANVAS_VORONOI_PIXEL_RATIO = 2;
 export const CANVAS_VORONOI_STIPPLE_SCALE = 2.25;
 
 export interface VoronoiPlainObject { 
@@ -240,6 +238,15 @@ export class WeightedVoronoiStipple extends Point3 {
     } 
 }
 
+function getRGBAFromImageData(imageData : ImageData, x : number, y : number) : { r : number, g : number, b : number, a : number } {
+    const index = (Math.min(y, imageData.height - 1) * imageData.width + Math.min(x, imageData.width - 1)) * 4;
+    const r = imageData.data[index + 0];
+    const g = imageData.data[index + 1];
+    const b = imageData.data[index + 2];
+    const a = imageData.data[index + 3];
+    return { r , g , b , a };
+}
+
 export class VoronoiCell extends PolygonShape {
     public seed: Point3;
     public centroid: Point3;
@@ -273,11 +280,7 @@ export class VoronoiCell extends PolygonShape {
         const coordX = this.seed.x;
         const coordY = this.seed.y;
         let p = fromVoronoiCanvasStipple(this.seed.x, this.seed.y, factorX, factorY, imageData.width, imageData.height);
-        const index = (p.y * imageData.width + p.x) * 4;
-        const r = imageData.data[index + 0];
-        const g = imageData.data[index + 1];
-        const b = imageData.data[index + 2];
-        const a = imageData.data[index + 3];
+        const { r, g, b, a } = getRGBAFromImageData(imageData, p.x, p.y);
         const stippleColor = new Color(r / 255, g / 255, b / 255);
         const weight = calculateVoronoiWeightByType(p.x, p.y, r, g, b, a, imageData, weightType, heatmap);
         const ret = shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold) ? null : new WeightedVoronoiStipple(coordX, coordY, weight, '#' + stippleColor.getHexString());
@@ -325,18 +328,14 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
         let delaunayIndex = 0;
         for(let i = 0; i < imageData.width; i++) {
             for(let j = 0; j < imageData.height; j++) {
-                const index = (j * imageData.width + i) * 4;
-                const a = imageData.data[index + 3];
-                    const r = imageData.data[index + 0];
-                    const g = imageData.data[index + 1];
-                    const b = imageData.data[index + 2];
-                    const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType, heatmap);
-                    if(!shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold)) { 
-                        delaunayIndex = delaunay.find(i, j, delaunayIndex);
-                        centroids[delaunayIndex].x += i * weight;
-                        centroids[delaunayIndex].y += j * weight;
-                        weights[delaunayIndex] += weight;
-                    }
+                const { r, g, b, a } = getRGBAFromImageData(imageData, i, j);
+                const weight = calculateVoronoiWeightByType(i, j, r, g, b, a, imageData, weightType, heatmap);
+                if(!shouldDiscardWeightedVoronoiStipple(weight, a, discardThreshold)) { 
+                    delaunayIndex = delaunay.find(i, j, delaunayIndex);
+                    centroids[delaunayIndex].x += i * weight;
+                    centroids[delaunayIndex].y += j * weight;
+                    weights[delaunayIndex] += weight;
+                }
             }
         }
         for(let i = 0; i < centroids.length; i++) {
@@ -367,35 +366,6 @@ export class VoronoiDiagram extends DualGraph<VoronoiCell> {
         const ret = new VoronoiDiagram([]);
         ret.triangulationEdges = plain.edges.map(ed => new PolygonEdge( new Point3(ed.start.x, ed.start.y, 0), new Point3(ed.end.x, ed.end.y, 0) ));
         ret.shapes = plain.shapes.map(sp => new VoronoiCell( new Point3(sp.seed.x, sp.seed.y), sp.points.map(p => new Point3(p.x, p.y, 0)), true ));
-        return ret;
-    }
-    static buildWithD3Delaunay = (proposedPolygon: Point3[], width: number = 8, height: number = 8) => {
-        const delaunay = Delaunay.from(proposedPolygon.map(x => [ x.x, x.y ]));
-        const ret = new VoronoiDiagram([]);
-        const d3Voronoi = delaunay.voronoi([-width, -height, width, height ]);
-        for (let i = 0; i < delaunay.points.length / 2; i++) {
-            const seed = new Point3(delaunay.points[2 * i], delaunay.points[2 * i + 1], 0);
-            const d3Cell = d3Voronoi.cellPolygon(i);
-            if (!d3Cell) continue;
-            const points = Array.from(d3Cell, ([x, y]) => new Point3(x, y, 0));
-            const cell = new VoronoiCell(seed, points, true);
-            ret.addShape(cell);
-        }
-        for (let t = 0; t < delaunay.triangles.length; t += 3) {
-            const p0 = new Point3(delaunay.points[2 * delaunay.triangles[t]], delaunay.points[2 * delaunay.triangles[t] + 1], 0);
-            const p1 = new Point3(delaunay.points[2 * delaunay.triangles[t + 1]], delaunay.points[2 * delaunay.triangles[t + 1] + 1], 0);
-            const p2 = new Point3(delaunay.points[2 * delaunay.triangles[t + 2]], delaunay.points[2 * delaunay.triangles[t + 2] + 1], 0);
-            const edges = [
-                new PolygonEdge(p0, p1),
-                new PolygonEdge(p1, p2),
-                new PolygonEdge(p2, p0)
-            ];
-            for (const edge of edges) {
-                if (!ret.triangulationEdges.some(e => e.equals(edge))) {
-                    ret.triangulationEdges.push(edge);
-                }
-            }
-        }
         return ret;
     }
     static buildWithD3DelaunayPlainObject = (proposedPolygon: [number, number][], width: number = 8, height: number = 8) : VoronoiPlainObject => {
@@ -515,10 +485,6 @@ export function voronoiDiagramFromD3DelaunayPlainObject(proposedPolygon: [number
     return VoronoiDiagram.buildWithD3DelaunayPlainObject(proposedPolygon, width, height);
 }
 
-export function voronoiDiagramFromD3Delaunay(proposedPolygon: Point3[], width: number = 8, height: number = 8): VoronoiDiagram {
-    return VoronoiDiagram.buildWithD3Delaunay(proposedPolygon, width, height);
-}
-
 export function voronoiDiagramFromDelaunay(proposedPolygon: Point3[], name: string = "voronoi-delaunay", width: number = 8, height: number = 8, debug = true): VoronoiDiagram {
     const triangles: Triangle[] = delaunayTriangulationConvex([...proposedPolygon], name, true, width, height, debug);
     const graph = new DualGraph(triangles);
@@ -594,15 +560,25 @@ export function drawWeightedVoronoiStipplingTextureOnExistingCanvas(
     coloredStipples = true,
     compositionMode : CompositionMode = CompositionMode.Darken,
     weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS,
-    discardThreshold : number|undefined = undefined) {
+    discardThreshold : number|undefined = undefined,
+    triangulationOpacity : number|undefined = 1,
+    triangulationColor : string = "#ff0000",
+    triangulationFill : boolean = false,
+    triangulationSkipOpacity : number = 0.95,
+    triangulationStroke : boolean = true
+) {
     if (ctx) {
-        const pixelRatio = 2;
+        const pixelRatio = CANVAS_VORONOI_PIXEL_RATIO;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         if(clear) {
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, imageToCanvasFactor, diagram, pixelRatio, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor, fillEdge, minDotSize, maxDotSize, lineWidth, coloredStipples, compositionMode, weightType, discardThreshold);
+        drawWeightedVoronoiStipplingLinesInCanvas(ctx, imageData, 
+            imageToCanvasFactor, diagram, pixelRatio, 
+            drawSeeds, drawCentroids, drawEdges, drawTriangulation, 
+            factor, fillEdge, minDotSize, maxDotSize, lineWidth, coloredStipples, compositionMode, weightType, discardThreshold,
+            triangulationOpacity, triangulationColor, triangulationFill, triangulationSkipOpacity, triangulationStroke);
     }
 }
 
@@ -610,7 +586,7 @@ export function drawVoronoiTextureOnExistingCanvas(canvas : HTMLCanvasElement, d
     const ctx = canvas.getContext('2d');
 
     if (ctx) {
-        const pixelRatio = 2;
+        const pixelRatio = CANVAS_VORONOI_PIXEL_RATIO;
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         if(clear) {
             ctx.fillStyle = 'white';
@@ -626,6 +602,46 @@ export function generateVoronoiTexture(diagram: VoronoiDiagram, width: number = 
     canvas.height = height;
     drawVoronoiTextureOnExistingCanvas(canvas, diagram, drawSeeds, drawCentroids, drawEdges, drawTriangulation, factor);
     return canvas;
+}
+
+function drawGradientTriangleFromEdges(context : CanvasRenderingContext2D, imageData : ImageData, triangleEdges : [PolygonEdge,PolygonEdge,PolygonEdge], factor : number, imageToCanvasFactor : number, pixelRatio : number, shouldStroke : boolean = true, shouldFill : boolean = false, skipOpacityThreshold = 0.75) {
+    const [edge1, edge2, edge3] = triangleEdges;
+
+    const aspect = imageData.width / imageData.height;
+    const factorX = imageToCanvasFactor;
+    const factorY = imageToCanvasFactor / aspect;
+
+    const pointA = fromVoronoiCanvasStipple(edge1.start.x, edge1.start.y, factorX, factorY, imageData.width, imageData.height);
+    const pointB = fromVoronoiCanvasStipple(edge2.start.x, edge2.start.y, factorX, factorY, imageData.width, imageData.height);
+    const pointC = fromVoronoiCanvasStipple(edge3.start.x, edge3.start.y, factorX, factorY, imageData.width, imageData.height);
+
+    const barycenterColor = getRGBAFromImageData(imageData, Math.round((pointA.x + pointB.x + pointC.x) / 3), Math.round((pointA.y + pointB.y + pointC.y) / 3));
+
+    if(barycenterColor.a <= (skipOpacityThreshold * 255)) {
+        return;
+    }
+    
+    context.beginPath();
+    context.moveTo((context.canvas.width / 2 + (edge1.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge1.start.y * factor)) / pixelRatio);
+    context.lineTo((context.canvas.width / 2 + (edge2.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge2.start.y * factor)) / pixelRatio);
+    context.lineTo((context.canvas.width / 2 + (edge3.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge3.start.y * factor)) / pixelRatio);
+    context.closePath();
+    if(shouldStroke) {
+        context.stroke();
+    }
+    if(shouldFill) {
+        const colorA = getRGBAFromImageData(imageData, pointA.x, pointA.y);
+        const colorB = getRGBAFromImageData(imageData, pointB.x, pointB.y);
+        const colorC = getRGBAFromImageData(imageData, pointC.x, pointC.y);
+        const averageColor = {
+            r: Math.round((colorA.r + colorB.r + colorC.r) / 3),
+            g: Math.round((colorA.g + colorB.g + colorC.g) / 3),
+            b: Math.round((colorA.b + colorB.b + colorC.b) / 3),
+            a: Math.round((colorA.a + colorB.a + colorC.a) / 3)
+        };
+        context.fillStyle = `rgba(${averageColor.r}, ${averageColor.g}, ${averageColor.b}, ${averageColor.a / 255})`;
+        context.fill();
+    }
 }
 
 function drawWeightedVoronoiStipplingLinesInCanvas(
@@ -646,7 +662,12 @@ function drawWeightedVoronoiStipplingLinesInCanvas(
     coloredStipples = true,
     compositionMode : CompositionMode = CompositionMode.Darken,
     weightType : VoronoiWeightMethod = VoronoiWeightMethod.SIMPLE_BRIGHTNESS,
-    discardThreshold : number|undefined = undefined
+    discardThreshold : number|undefined = undefined,
+    triangulationOpacity : number|undefined = 1,
+    triangulationColor : string = "#ff0000",
+    triangulationFill : boolean = false,
+    triangulationSkipOpacity : number = 0.95,
+    triangulationStroke : boolean = true
 ) {
 
     context.globalCompositeOperation = compositionMode;
@@ -654,15 +675,34 @@ function drawWeightedVoronoiStipplingLinesInCanvas(
     context.lineWidth = lineWidth;
     context.fillStyle = 'black';
 
-    if(drawTriangulation) {
-        diagram.triangulationEdges.forEach((edge) => {
-            context.strokeStyle = '#fae2e2';
-            context.lineWidth = lineWidth;
-            context.beginPath();
-            context.moveTo((context.canvas.width / 2 + (edge.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.start.y * factor)) / pixelRatio);
-            context.lineTo((context.canvas.width / 2 + (edge.end.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.end.y * factor)) / pixelRatio);
-            context.stroke();
-        });
+    if(drawTriangulation && triangulationOpacity > 0) {
+        context.globalAlpha = triangulationOpacity;
+        context.strokeStyle = triangulationColor;
+        context.lineWidth = lineWidth;
+        
+        if(!triangulationFill) {
+            
+            if(triangulationStroke) {
+                context.beginPath();
+                diagram.triangulationEdges.forEach((edge) => {
+                    context.moveTo((context.canvas.width / 2 + (edge.start.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.start.y * factor)) / pixelRatio);
+                    context.lineTo((context.canvas.width / 2 + (edge.end.x * factor)) / pixelRatio, (context.canvas.height / 2 + (edge.end.y * factor)) / pixelRatio);
+                });
+                context.stroke();
+            }
+
+        } else {
+
+            for(let i = 0; i < diagram.triangulationEdges.length; i = i + 3) {
+                const e1 = diagram.triangulationEdges[i];
+                const e2 = diagram.triangulationEdges[i + 1];
+                const e3 = diagram.triangulationEdges[i + 2];
+                drawGradientTriangleFromEdges(context, imageData, [e1,e2,e3], factor, imageToCanvasFactor, pixelRatio, triangulationStroke, triangulationFill, triangulationSkipOpacity);
+            }
+
+        }
+
+        context.globalAlpha = 1;
     }
 
     let heatmap : number[][]|undefined = undefined;

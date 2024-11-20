@@ -2,7 +2,7 @@ import { CompositionMode } from "@components/CanvasCompositionMode";
 import HeaderWithBackButton from "@components/HeaderWithBackButton";
 import { multiplyPointByScalar } from "@geometry/affine";
 import { Point3 } from "@geometry/points";
-import { CANVAS_VORONOI_STIPPLE_SCALE, drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VORONOI_DEFAULT_CANVAS_FACTOR, VoronoiDiagram, voronoiDiagramFromD3Delaunay, voronoiDiagramFromDelaunay, VoronoiPlainObject, VoronoiWeightMethod } from "@geometry/voronoi";
+import { CANVAS_VORONOI_PIXEL_RATIO, CANVAS_VORONOI_STIPPLE_SCALE, drawWeightedVoronoiStipplingTextureOnExistingCanvas, fromVoronoiCanvasStipple, toVoronoiCanvasStipple, VORONOI_DEFAULT_CANVAS_FACTOR, VoronoiDiagram, VoronoiPlainObject, VoronoiWeightMethod } from "@geometry/voronoi";
 import { VoronoiWorkerObject } from "@geometry/voronoiWorker";
 import { folder, useControls } from "leva";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -79,6 +79,7 @@ export default function WeightedVoronoiStippling() {
     const [ points, setPoints ] = useState<Point3[]>([]);
     const [ imageData, setImageData ] = useState<ImageData>();
     const [ voronoi, setVoronoi ] = useState<VoronoiDiagram>();
+    const [ imagePath, setImagePath ] = useState<string|undefined>("logo.png");
 
     const [ discardLowWeight, setDiscardLowWeight ] = useState(false);
 
@@ -88,27 +89,64 @@ export default function WeightedVoronoiStippling() {
     const height = dims.height - marginTop;
     const myTargetSpace = 6;
     
-    const values = useControls({
-        'Voronoi': folder({
-            'image': { image: '/logo.png' },
-            'seeds': true,
-            'centroids': true,
-            'edges': true,
-            'triangulation': true,
-            'fillEdge': false,
-            'coloredStipples': true,
-            'skipUnclearPoints': false,
-            'numberOfPoints': { min: 3, max: 20000, value: 1000 },
-            'minDotSize': { min: 0, max: 3, value: 0.5, step: 0.01 },
-            'maxDotSize': { min: 0, max: 3, value: 1.5, step: 0.01 },
-            'lineWidth': { min: 0.15, max: 2, value: 0.15, step: 0.05 },
-            'imageOpacity': { min: 0, max: 1, value: 0.15, step: 0.05 },
+    const [ values, setControls ] = useControls("Weighted Voronoi Stippling", () => ({
+        'image': { image: imagePath },
+        'image-preset': { options: [
+            "brad.png",
+            "hands.png",
+            "hands2.jpg",
+            "japanese.jpg",
+            "logo-blur1.png",
+            "logo-blur2.png",
+            "logo-blur3.png",
+            "logo.png",
+            "mark.png",
+            "polar-bear.png",
+            "smiley.jpeg",
+            "spock-removebg.png",
+            "spock.png",
+            "woman.png"
+        ], value: 'logo.png' },
+        'numberOfPoints': { min: 3, max: 20000, value: 1000 },
+        'minDotSize': { min: 0, max: 3, value: 0.5, step: 0.01 },
+        'maxDotSize': { min: 0, max: 3, value: 1.5, step: 0.01 },
+        'image-opts': folder({
+            'i-visible': { value: true },
             'compositionMode': { options:  Object.entries(CompositionMode).map(x => x[1]), value: CompositionMode.Darken },
+            'imageOpacity': { min: 0, max: 1, value: 0.15, step: 0.05 },
+        }),
+        'voronoi-opts': folder({
+            'seeds': true,
+            'centroids': false,
+            'edges': false,
+            'fillEdge': false,
+            'coloredStipples': false,
+            'skipUnclearPoints': false,
+
+        }),
+        'triangulation-opts': folder({
+            't-visible': false,
+            't-opacity': { min: 0, max: 1, value: 0.5, step: 0.01 },
+            't-color': { value: '#ff0000' },
+            't-skip-with-alpha': { min: 0, max: 1, value: 0.95, step: 0.01 },
+            't-fill': { value: false },
+            't-stroke': { value: true },
+            'lineWidth': { min: 0.15, max: 2, value: 0.15, step: 0.05 },
+        }),
+        'weight-opts': folder({
             'weightType': { options:  Object.entries(VoronoiWeightMethod).map(x => x[1]), value: VoronoiWeightMethod.SIMPLE_BRIGHTNESS },
             'discardLowWeight': discardLowWeight,
-            'discardThreshold': { min: 0, max: WEIGHT_THRESHOLD_FACTOR, value: 0.125 * WEIGHT_THRESHOLD_FACTOR, step: 0.001 * WEIGHT_THRESHOLD_FACTOR, disabled: !discardLowWeight }
+            'discardThreshold': { min: 0, max: WEIGHT_THRESHOLD_FACTOR, value: 0.125 * WEIGHT_THRESHOLD_FACTOR, step: 0.001 * WEIGHT_THRESHOLD_FACTOR, disabled: !discardLowWeight }                
         })
-    }, [ discardLowWeight ]);
+    }), [ discardLowWeight, imagePath ]);
+
+    useEffect(() => {
+        setImagePath(values['image']);
+    }, [ values['image'] ]);
+
+    useEffect(() => {
+        setImagePath(values['image-preset']);
+    }, [ values['image-preset'] ]);
 
     useEffect(() => {
         setDiscardLowWeight(values['discardLowWeight']);
@@ -119,19 +157,22 @@ export default function WeightedVoronoiStippling() {
     const drawImageOnCanvas = useCallback((opacity = 0.5) => {
         let ctx = canvasRef.current?.getContext('2d', { alpha: true });
         if(ctx && imageData && cachedResizedImage && width && height) {
-            const aspect = imageData.width / imageData.height;
-            const targetWidthSrc = myTargetSpace;
-            const targetHeightSrc = myTargetSpace / aspect;
-            const factor = VORONOI_DEFAULT_CANVAS_FACTOR * CANVAS_VORONOI_STIPPLE_SCALE;
-            const pixelRatio = 2;
-            const targetWidth = factor * targetWidthSrc;
-            const targetHeight = factor * targetHeightSrc;
+            const pixelRatio = CANVAS_VORONOI_PIXEL_RATIO;
+            ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
             ctx.clearRect(0, 0, width, height);
-            ctx.globalAlpha = opacity;
-            ctx.drawImage(cachedResizedImage, (width / 2 - targetWidth / 2) / pixelRatio, (height / 2 - targetHeight / 2) / pixelRatio, targetWidth / pixelRatio, targetHeight / pixelRatio);
-            ctx.globalAlpha = 1;
+            if(opacity > 0) {
+                const aspect = imageData.width / imageData.height;
+                const targetWidthSrc = myTargetSpace;
+                const targetHeightSrc = myTargetSpace / aspect;
+                const factor = VORONOI_DEFAULT_CANVAS_FACTOR * CANVAS_VORONOI_STIPPLE_SCALE;
+                const targetWidth = factor * targetWidthSrc;
+                const targetHeight = factor * targetHeightSrc;   
+                ctx.globalAlpha = opacity;
+                ctx.drawImage(cachedResizedImage, (width / 2 - targetWidth / 2) / pixelRatio, (height / 2 - targetHeight / 2) / pixelRatio, targetWidth / pixelRatio, targetHeight / pixelRatio);
+                ctx.globalAlpha = 1;
+            }
         }
-    }, [ cachedResizedImage ]);
+    }, [ cachedResizedImage, width, height ]);
 
     const workerRef = useRef<Worker | null>(null);
 
@@ -161,8 +202,8 @@ export default function WeightedVoronoiStippling() {
     }, [ imageData ]);
 
     useEffect(() => {
-        if(values['image']) {
-            getImagePixels(values['image'])
+        if(imagePath) {
+            getImagePixels(imagePath)
                 .then(data => {
                     const id = new ImageData(data.pixels, data.width, data.height);
                     setImageData(id);
@@ -184,7 +225,7 @@ export default function WeightedVoronoiStippling() {
             setImageData(undefined);
             setCachedResizedImage(null);
         }
-    }, [ values['image'], width, height, values['numberOfPoints'], values['weightType'], values['skipUnclearPoints'], values['discardLowWeight'], values['discardThreshold'] ]);
+    }, [ imagePath, width, height, values['numberOfPoints'], values['weightType'], values['skipUnclearPoints'], values['discardLowWeight'], values['discardThreshold'] ]);
 
     useEffect(() => {
         try {
@@ -201,7 +242,7 @@ export default function WeightedVoronoiStippling() {
 
     useEffect(() => {
         if(canvasRef.current && offscreenContext && imageData && voronoi) {
-            drawImageOnCanvas(values['imageOpacity']);     
+            drawImageOnCanvas(values['i-visible'] ? values['imageOpacity'] : 0);
             drawWeightedVoronoiStipplingTextureOnExistingCanvas(
                 canvasRef.current, 
                 offscreenContext, 
@@ -212,7 +253,7 @@ export default function WeightedVoronoiStippling() {
                 values['seeds'], 
                 values['centroids'], 
                 values['edges'], 
-                values['triangulation'], 
+                values['t-visible'], 
                 VORONOI_DEFAULT_CANVAS_FACTOR, 
                 false, 
                 values['minDotSize'],
@@ -221,10 +262,24 @@ export default function WeightedVoronoiStippling() {
                 values['coloredStipples'],
                 values['compositionMode'],
                 values['weightType'], 
-                values['discardLowWeight'] ? values['discardThreshold'] / WEIGHT_THRESHOLD_FACTOR : undefined
+                values['discardLowWeight'] ? values['discardThreshold'] / WEIGHT_THRESHOLD_FACTOR : undefined,
+                values['t-opacity'],
+                values['t-color'],
+                values['t-fill'],
+                values['t-skip-with-alpha'],
+                values['t-stroke']
             );
         }
-    }, [ voronoi, values['fillEdge'], values['seeds'], values['edges'], values['triangulation'], values['centroids'], values['maxDotSize'], values['minDotSize'], values['lineWidth'], values['coloredStipples'], values['imageOpacity'], values['compositionMode'], values['weightType'], values['discardLowWeight'], values['discardThreshold'] ]);
+    }, [ 
+        voronoi, 
+        values['i-visible'],
+        values['t-opacity'], values['t-color'], values['fillEdge'], 
+        values['seeds'], values['edges'], values['t-visible'], values['centroids'], 
+        values['maxDotSize'], values['minDotSize'], values['lineWidth'], values['coloredStipples'], 
+        values['imageOpacity'], values['compositionMode'], values['weightType'], values['discardLowWeight'], values['discardThreshold'],
+        values['t-fill'],
+        values['t-skip-with-alpha'],
+        values['t-stroke'] ]);
 
     return (
         <>
