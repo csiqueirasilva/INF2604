@@ -97,7 +97,7 @@ export default function WeightedVoronoiStippling() {
             "color-wheel.png",
             "pattern-wave.avif",
             "radial-gradient.jpg",
-            "Silvio-Santos2.png",
+            "Silvio-Santos-2.png",
             "sombrero-galaxy.jpg",
             "pillars_of_creation.webp",
             "enterprise.png",
