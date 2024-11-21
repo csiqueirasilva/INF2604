@@ -92,6 +92,16 @@ export default function WeightedVoronoiStippling() {
     const [ values, setControls ] = useControls("Weighted Voronoi Stippling", () => ({
         'image': { image: imagePath },
         'image-preset': { options: [
+            "checkboard.avif",
+            "gradient-1.jpg",
+            "color-wheel.png",
+            "pattern-wave.avif",
+            "radial-gradient.jpg",
+            "Silvio-Santos2.png",
+            "sombrero-galaxy.jpg",
+            "pillars_of_creation.webp",
+            "enterprise.png",
+            "zebra.jpg",
             "brad.png",
             "hands.png",
             "hands2.jpg",
