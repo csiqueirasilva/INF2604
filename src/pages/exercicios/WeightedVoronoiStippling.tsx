@@ -92,6 +92,8 @@ export default function WeightedVoronoiStippling() {
     const [ values, setControls ] = useControls("Weighted Voronoi Stippling", () => ({
         'image': { image: imagePath },
         'image-preset': { options: [
+            "obama.png",
+            "ze-caixao.jpg",
             "checkboard.avif",
             "gradient-1.jpg",
             "color-wheel.png",
