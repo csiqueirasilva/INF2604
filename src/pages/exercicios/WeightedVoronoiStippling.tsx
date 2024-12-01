@@ -196,7 +196,7 @@ export default function WeightedVoronoiStippling() {
                 if(vd && canvasRef.current && imageData) {
                     let pointsIt = vd.getWeightedVoronoiStipples(imageData, myTargetSpace, values['weightType'], values['discardLowWeight'] ? values['discardThreshold'] / WEIGHT_THRESHOLD_FACTOR : undefined);
                     const seeds = result.shapes.map(x => x.seed);
-                    const alreadyWeighted = pointsIt.every((x, idx) => ((seeds[idx].x - x.x) + (seeds[idx].y - x.y)) <= 1E-8);
+                    const alreadyWeighted = pointsIt.every((x, idx) => ((seeds[idx].x - x.x) + (seeds[idx].y - x.y)) <= 1E-14);
                     if(!alreadyWeighted) {
                         workerRef.current?.postMessage({ points: pointsIt.map(point => [ point.x, point.y ]), width: width, height: height } as VoronoiWorkerObject);
                     }
